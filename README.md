@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Agency OS
 
-## Getting Started
+AI-native CRM and operating system for digital marketing agencies. Built with Next.js, Supabase, and a premium dark-first design.
 
-First, run the development server:
+## Features
+
+- **Company Hub** — Clean homepage with brand cards showing health, spend, leads, and campaign status
+- **Executive Dashboard** — Revenue, ROAS, CPL, CPA, goals, and performance trends
+- **Google Ads & Meta Ads** — Campaign monitoring, budgets, and AI recommendations
+- **Social Media** — Cross-platform metrics for Facebook, Instagram, LinkedIn, X, YouTube
+- **Social Scheduler** — Draft, AI captions, schedule, approve, multi-platform publishing
+- **Lead Management** — Privyr-inspired workflow with timeline, scoring, and SLA tracking
+- **Task Management** — Kanban board with types, priorities, and deadlines
+- **RingCentral** — Call analytics, recordings, and agent performance
+- **AI Insights** — Actionable recommendations with explanations on every dashboard
+- **RBAC** — God Mode, Manager, Designer, Telecaller, Admin roles with RLS
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Framer Motion |
+| Backend | Next.js Server Actions, Supabase |
+| Database | PostgreSQL (Supabase) with Row Level Security |
+| Auth | Supabase Auth |
+| Hosting | Vercel |
+
+## Quick Start
 
 ```bash
+npm install
+cp .env.example .env.local
+# Add Supabase credentials (optional for demo mode)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Without Supabase configured, the app runs in **demo mode** with sample data.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Supabase Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Create a project at [supabase.com](https://supabase.com)
+2. Run migrations from `supabase/migrations/`
+3. Run `supabase/seed.sql` for sample data
+4. Add credentials to `.env.local`
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript check |
+| `npm run test` | Unit tests (Vitest) |
+| `npm run test:e2e` | E2E tests (Playwright) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Documentation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [Architecture](docs/ARCHITECTURE.md)
+- [Database](docs/DATABASE.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Developer Guide](docs/DEVELOPER.md)
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private — All rights reserved.
