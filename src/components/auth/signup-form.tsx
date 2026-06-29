@@ -3,11 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { registerUser } from "@/features/auth/actions";
+import { isDemoMode } from "@/lib/config";
 import { toast } from "sonner";
 
 export function SignupForm() {
@@ -21,35 +23,48 @@ export function SignupForm() {
     e.preventDefault();
     setLoading(true);
 
-    if (!isSupabaseConfigured()) {
+    if (isDemoMode()) {
       toast.success("Demo mode — redirecting...");
       router.push("/");
+      setLoading(false);
       return;
     }
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const result = await registerUser({ email, password, fullName });
+    if (!result.success) {
+      toast.error(result.error ?? "Registration failed");
+      setLoading(false);
+      return;
+    }
+
+    const signInResult = await signIn("credentials", {
       email,
       password,
-      options: { data: { full_name: fullName } },
+      redirect: false,
     });
 
     setLoading(false);
-    if (error) {
-      toast.error(error.message);
+
+    if (signInResult?.error) {
+      toast.success("Account created. Please sign in.");
+      router.push("/login");
       return;
     }
 
-    toast.success("Check your email to confirm your account");
-    router.push("/login");
+    toast.success("Welcome to Agency OS!");
+    router.push("/");
+    router.refresh();
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <Card className="w-full max-w-md border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
-        <h1 className="mb-6 text-center text-2xl font-semibold">
+        <h1 className="mb-2 text-center text-2xl font-semibold">
           Create account
         </h1>
+        <p className="mb-6 text-center text-sm text-muted-foreground">
+          First user becomes God Mode admin
+        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="name">Full name</Label>

@@ -3,12 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { createClient } from "@/lib/supabase/client";
-import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { isDemoMode } from "@/lib/config";
 import { toast } from "sonner";
 
 export function LoginForm() {
@@ -21,22 +21,24 @@ export function LoginForm() {
     e.preventDefault();
     setLoading(true);
 
-    if (!isSupabaseConfigured()) {
+    if (isDemoMode()) {
       toast.success("Demo mode — redirecting...");
       router.push("/");
       router.refresh();
+      setLoading(false);
       return;
     }
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const result = await signIn("credentials", {
       email,
       password,
+      redirect: false,
     });
 
     setLoading(false);
-    if (error) {
-      toast.error(error.message);
+
+    if (result?.error) {
+      toast.error("Invalid email or password");
       return;
     }
 
@@ -91,9 +93,14 @@ export function LoginForm() {
           </Button>
         </form>
 
-        {!isSupabaseConfigured() && (
+        {!isDemoMode() && (
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            Connected to Neon database
+          </p>
+        )}
+        {isDemoMode() && (
           <p className="mt-4 text-center text-xs text-amber-400">
-            Demo mode active — click Sign in to explore without Supabase
+            Demo mode — no DATABASE_URL set. Click Sign in to explore.
           </p>
         )}
 
