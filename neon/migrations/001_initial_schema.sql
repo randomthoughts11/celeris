@@ -15,7 +15,7 @@ DO $$ BEGIN CREATE TYPE campaign_status AS ENUM ('active', 'paused', 'ended', 'd
 DO $$ BEGIN CREATE TYPE social_platform AS ENUM ('facebook', 'instagram', 'linkedin', 'x', 'youtube'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE post_status AS ENUM ('draft', 'pending_approval', 'approved', 'scheduled', 'published', 'failed', 'archived'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE notification_type AS ENUM ('budget_limit', 'missed_call', 'new_lead', 'overdue_task', 'campaign_issue', 'publishing_reminder', 'team_mention', 'approval', 'ai_insight', 'system'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE integration_provider AS ENUM ('google_ads', 'meta_ads', 'ringcentral', 'facebook', 'instagram', 'linkedin', 'x', 'youtube'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE integration_provider AS ENUM ('google_ads', 'meta_ads', 'ringcentral', 'facebook', 'instagram', 'linkedin', 'x', 'youtube', 'google_drive'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE call_direction AS ENUM ('inbound', 'outbound'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE call_outcome AS ENUM ('answered', 'missed', 'voicemail', 'busy', 'failed', 'unknown'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE insight_severity AS ENUM ('info', 'warning', 'critical', 'success'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
