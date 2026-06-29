@@ -1,13 +1,13 @@
 import { auth } from "@/auth";
-import { isDatabaseConfigured } from "@/lib/config";
+import { isAuthConfigured } from "@/lib/config";
 import { NextResponse } from "next/server";
 
 export default auth((req) => {
-  if (!isDatabaseConfigured()) {
+  if (!isAuthConfigured()) {
     return NextResponse.next();
   }
 
-  const isLoggedIn = !!req.auth;
+  const isLoggedIn = Boolean(req.auth?.user?.id);
   const { pathname } = req.nextUrl;
   const isAuthRoute =
     pathname.startsWith("/login") || pathname.startsWith("/signup");
