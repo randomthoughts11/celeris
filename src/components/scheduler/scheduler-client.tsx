@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { generateAiCaption } from "@/features/scheduler/actions";
+import { DriveFileUpload } from "@/components/drive/drive-file-upload";
 import type { SocialPost, SocialPlatform } from "@/types";
 
 const platformLabels: Record<SocialPlatform, string> = {
@@ -45,6 +46,7 @@ export function SchedulerClient({ posts, companyId }: SchedulerClientProps) {
   const [caption, setCaption] = useState("");
   const [platform, setPlatform] = useState<SocialPlatform>("instagram");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [attachedFiles, setAttachedFiles] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
 
   const handleGenerateCaption = () => {
@@ -124,6 +126,24 @@ export function SchedulerClient({ posts, companyId }: SchedulerClientProps) {
                   rows={4}
                   placeholder="Write your caption..."
                 />
+              </div>
+              <div>
+                <Label>Media (Google Drive)</Label>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  <DriveFileUpload
+                    companyId={companyId}
+                    folderType="posts"
+                    label="Attach image or video"
+                    onUploaded={(file) =>
+                      setAttachedFiles((prev) => [...prev, file.name])
+                    }
+                  />
+                  {attachedFiles.map((name) => (
+                    <Badge key={name} variant="outline" className="text-xs">
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
               </div>
               <div>
                 <Label>Schedule</Label>

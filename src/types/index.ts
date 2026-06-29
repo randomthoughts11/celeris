@@ -300,3 +300,19 @@ export interface SessionUser {
   roles: UserRole[];
   avatarUrl: string | null;
 }
+
+export interface DriveFile {
+  id: string;
+  company_id: string;
+  drive_file_id: string;
+  name: string;
+  mime_type: string | null;
+  folder_type: string;
+  web_view_link: string | null;
+  thumbnail_link: string | null;
+  size_bytes: number;
+  uploaded_by: string | null;
+  entity_type: string | null;
+  entity_id: string | null;
+  created_at: string;
+}

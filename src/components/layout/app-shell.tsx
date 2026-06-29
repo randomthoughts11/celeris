@@ -15,6 +15,7 @@ import {
   Share2,
   Target,
   CheckSquare,
+  HardDrive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -36,6 +37,7 @@ const companyNav = [
   { href: "/meta-ads", label: "Meta Ads", icon: Target },
   { href: "/social", label: "Social", icon: Share2 },
   { href: "/scheduler", label: "Scheduler", icon: Calendar },
+  { href: "/drive", label: "Drive", icon: HardDrive },
   { href: "/leads", label: "Leads", icon: Building2 },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/ringcentral", label: "Calls", icon: Phone },
