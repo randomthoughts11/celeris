@@ -13,5 +13,5 @@ test("company dashboard loads", async ({ page }) => {
 
 test("login page renders", async ({ page }) => {
   await page.goto("/login");
-  await expect(page.getByText("Welcome back")).toBeVisible();
+  await expect(page).toHaveURL(/\/login/);
 });

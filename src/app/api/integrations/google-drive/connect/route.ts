@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getSessionUser } from "@/lib/auth/session";
 import { isDatabaseConfigured } from "@/lib/config";
 import { getAuthUrl, isGoogleDriveConfigured } from "@/lib/google-drive/service";
 
@@ -11,8 +11,8 @@ export async function GET(request: Request) {
     );
   }
 
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getSessionUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

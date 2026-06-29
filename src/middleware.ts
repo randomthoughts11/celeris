@@ -1,37 +1,28 @@
-import { auth } from "@/auth";
-import { isAuthConfigured } from "@/lib/config";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { isClerkConfigured, isDatabaseConfigured, isDemoMode } from "@/lib/config";
 
-export default auth((req) => {
-  if (!isAuthConfigured()) {
+const isPublicRoute = createRouteMatcher([
+  "/login(.*)",
+  "/signup(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+]);
+
+export default clerkMiddleware(async (auth, request) => {
+  if ((!isDatabaseConfigured() || isDemoMode()) && !isClerkConfigured()) {
     return NextResponse.next();
   }
 
-  const isLoggedIn = Boolean(req.auth?.user?.id);
-  const { pathname } = req.nextUrl;
-  const isAuthRoute =
-    pathname.startsWith("/login") || pathname.startsWith("/signup");
-  const isPublicRoute =
-    isAuthRoute ||
-    pathname.startsWith("/api/auth");
-
-  if (!isLoggedIn && !isPublicRoute) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+  if (!isPublicRoute(request)) {
+    await auth.protect();
   }
-
-  if (isLoggedIn && isAuthRoute) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
-  }
-
-  return NextResponse.next();
 });
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
+    "/__clerk/:path*",
   ],
 };

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { UserButton } from "@clerk/nextjs";
 import { motion } from "framer-motion";
 import {
   BarChart3,
@@ -18,17 +18,8 @@ import {
   HardDrive,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import type { SessionUser } from "@/types";
-import { getInitials } from "@/lib/format";
 import { ROLE_LABELS } from "@/lib/rbac/permissions";
 
 const companyNav = [
@@ -97,45 +88,26 @@ export function AppShell({ user, children }: AppShellProps) {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-4 w-4" />
               <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-violet-500" />
             </Button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger className="inline-flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted">
-                <Avatar className="h-7 w-7">
-                  <AvatarFallback className="bg-violet-500/20 text-xs text-violet-300">
-                    {getInitials(user.fullName)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden text-sm sm:inline">{user.fullName}</span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium">{user.fullName}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                  <p className="mt-1 text-xs text-violet-400">
-                    {ROLE_LABELS[user.roles[0]]}
-                  </p>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <Link href="/settings">Settings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href="/admin">Admin</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="cursor-pointer"
-                >
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="hidden text-right sm:block">
+              <p className="text-sm font-medium leading-none">{user.fullName}</p>
+              <p className="mt-1 text-xs text-violet-400">
+                {ROLE_LABELS[user.roles[0]]}
+              </p>
+            </div>
+
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: "h-8 w-8",
+                },
+              }}
+            />
           </div>
         </div>
 

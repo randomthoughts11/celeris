@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getSessionUser } from "@/lib/auth/session";
 import { insertDriveFile } from "@/lib/db/drive-files";
 import { uploadToDrive } from "@/lib/google-drive/service";
 
 const MAX_SIZE = 25 * 1024 * 1024; // 25 MB
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user) {
+  const user = await getSessionUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       webViewLink: uploaded.webViewLink,
       thumbnailLink: uploaded.thumbnailLink,
       sizeBytes: file.size,
-      uploadedBy: session.user.id,
+      uploadedBy: user.id,
       entityType: entityType ?? undefined,
       entityId: entityId ?? undefined,
     });
