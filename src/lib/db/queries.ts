@@ -53,11 +53,20 @@ function mapMetrics(row: Record<string, unknown>): CompanyMetrics {
   };
 }
 
-export async function fetchCompanies(): Promise<CompanyWithMetrics[]> {
+export async function fetchCompanies(
+  accessibleIds?: string[] | "all"
+): Promise<CompanyWithMetrics[]> {
   const sql = getSql();
-  const companies = await sql`
-    SELECT * FROM companies WHERE is_active = true ORDER BY name
-  `;
+  const companies =
+    accessibleIds === "all" || !accessibleIds
+      ? await sql`SELECT * FROM companies WHERE is_active = true ORDER BY name`
+      : accessibleIds.length === 0
+        ? []
+        : await sql`
+            SELECT * FROM companies
+            WHERE is_active = true AND id = ANY(${accessibleIds}::uuid[])
+            ORDER BY name
+          `;
   const metrics = await sql`SELECT * FROM company_metrics`;
   const metricsByCompany = new Map(
     metrics.map((m) => [m.company_id as string, mapMetrics(m)])
@@ -74,6 +83,22 @@ export async function fetchCompanyBySlug(
   const sql = getSql();
   const rows = await sql`
     SELECT * FROM companies WHERE slug = ${slug} LIMIT 1
+  `;
+  if (!rows[0]) return null;
+  const company = mapCompany(rows[0]);
+  const metricsRows = await sql`
+    SELECT * FROM company_metrics WHERE company_id = ${company.id} LIMIT 1
+  `;
+  company.metrics = metricsRows[0] ? mapMetrics(metricsRows[0]) : null;
+  return company;
+}
+
+export async function fetchCompanyById(
+  id: string
+): Promise<CompanyWithMetrics | null> {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT * FROM companies WHERE id = ${id} LIMIT 1
   `;
   if (!rows[0]) return null;
   const company = mapCompany(rows[0]);
@@ -161,11 +186,20 @@ export async function fetchMetaAdsCampaigns(
   })) as MetaAdsCampaign[];
 }
 
-export async function fetchLeads(companyId: string): Promise<Lead[]> {
+export async function fetchLeads(
+  companyId: string,
+  ownerId?: string
+): Promise<Lead[]> {
   const sql = getSql();
-  const rows = await sql`
-    SELECT * FROM leads WHERE company_id = ${companyId} ORDER BY created_at DESC
-  `;
+  const rows = ownerId
+    ? await sql`
+        SELECT * FROM leads
+        WHERE company_id = ${companyId} AND owner_id = ${ownerId}
+        ORDER BY created_at DESC
+      `
+    : await sql`
+        SELECT * FROM leads WHERE company_id = ${companyId} ORDER BY created_at DESC
+      `;
   return rows as unknown as Lead[];
 }
 

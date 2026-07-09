@@ -154,7 +154,26 @@ async function findOrCreateFolder(
 
 export async function getDriveClient(companyId: string) {
   const integration = await getIntegration(companyId, "google_drive");
-  if (!integration?.is_connected || !integration.credentials_encrypted) {
+  if (!integration?.is_connected) {
+    throw new Error("Google Drive not connected for this company");
+  }
+
+  const config = integration.config as unknown as DriveFolderConfig & {
+    agencyManaged?: boolean;
+  };
+
+  if (config.agencyManaged) {
+    const { getGoogleAccessToken } = await import("@/lib/integrations/google-agency");
+    const accessToken = await getGoogleAccessToken();
+    const oauth2 = getGoogleOAuthClient();
+    oauth2.setCredentials({ access_token: accessToken });
+    return {
+      drive: google.drive({ version: "v3", auth: oauth2 }),
+      config,
+    };
+  }
+
+  if (!integration.credentials_encrypted) {
     throw new Error("Google Drive not connected for this company");
   }
 

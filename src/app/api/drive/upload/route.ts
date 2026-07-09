@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
+import { canAccessCompany } from "@/lib/auth/access";
 import { insertDriveFile } from "@/lib/db/drive-files";
 import { uploadToDrive } from "@/lib/google-drive/service";
 
@@ -24,6 +25,11 @@ export async function POST(request: Request) {
         { error: "file and companyId required" },
         { status: 400 }
       );
+    }
+
+    const allowed = await canAccessCompany(user, companyId);
+    if (!allowed) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     if (file.size > MAX_SIZE) {

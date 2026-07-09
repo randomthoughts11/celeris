@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import { SocialDashboard } from "@/components/social/social-dashboard";
 import { getSocialMetrics } from "@/features/companies/company-data";
 import { getCompanyBySlug } from "@/features/companies/queries";
+import { requireCompanyPageAccess } from "@/lib/auth/page-guards";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
 export default async function SocialPage({ params }: PageProps) {
+  await requireCompanyPageAccess("social");
   const { slug } = await params;
   const company = await getCompanyBySlug(slug);
   if (!company) notFound();

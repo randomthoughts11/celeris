@@ -2,17 +2,15 @@ import { notFound } from "next/navigation";
 import { DrivePanel } from "@/components/drive/drive-panel";
 import { getCompanyBySlug } from "@/features/companies/queries";
 import { getDriveFiles, getDriveStatus } from "@/features/drive/queries";
+import { requireCompanyPageAccess } from "@/lib/auth/page-guards";
 import { isGoogleDriveConfigured } from "@/lib/google-drive/service";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ connected?: string }>;
 }
 
-export default async function CompanyDrivePage({
-  params,
-  searchParams,
-}: PageProps) {
+export default async function CompanyDrivePage({ params }: PageProps) {
+  await requireCompanyPageAccess("drive");
   const { slug } = await params;
   const company = await getCompanyBySlug(slug);
   if (!company) notFound();

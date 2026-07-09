@@ -1,28 +1,29 @@
-# Agency OS
+# Agency OS (Celeris CRM)
 
-AI-native CRM and operating system for digital marketing agencies. Built with Next.js, Supabase, and a premium dark-first design.
+AI-native CRM and operating system for digital marketing agencies. Built with Next.js, Clerk, Neon PostgreSQL, and a dark-first UI.
 
 ## Features
 
-- **Company Hub** — Clean homepage with brand cards showing health, spend, leads, and campaign status
-- **Executive Dashboard** — Revenue, ROAS, CPL, CPA, goals, and performance trends
-- **Google Ads & Meta Ads** — Campaign monitoring, budgets, and AI recommendations
-- **Social Media** — Cross-platform metrics for Facebook, Instagram, LinkedIn, X, YouTube
-- **Social Scheduler** — Draft, AI captions, schedule, approve, multi-platform publishing
-- **Lead Management** — Privyr-inspired workflow with timeline, scoring, and SLA tracking
-- **Task Management** — Kanban board with types, priorities, and deadlines
-- **RingCentral** — Call analytics, recordings, and agent performance
-- **AI Insights** — Actionable recommendations with explanations on every dashboard
-- **RBAC** — God Mode, Manager, Designer, Telecaller, Admin roles with RLS
+- **Company Hub** — Create clients, link Google/Meta ad accounts, health metrics
+- **Executive Dashboard** — Revenue, ROAS, CPL, goals, performance trends
+- **Google Ads & Meta Ads** — Campaign sync, budgets, AI insights
+- **Social Media** — Cross-platform metrics from Meta-connected pages
+- **Social Scheduler** — Draft posts with AI captions (publish via platforms manually)
+- **Lead Inbox** — Privyr-style workflow with call/WhatsApp quick actions
+- **Privyr sync** — CSV import + Zapier webhook for activity logs
+- **Task Management** — Kanban board with create and status updates
+- **Team Chat** — Company rooms and DMs
+- **Admin** — User approval, roles, company assignment
+- **RBAC** — God Mode, Admin, Manager, Designer, Telecaller
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Framer Motion |
-| Backend | Next.js Server Actions, Supabase |
-| Database | PostgreSQL (Supabase) with Row Level Security |
-| Auth | Supabase Auth |
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui |
+| Auth | Clerk |
+| Database | Neon PostgreSQL |
+| Integrations | Google Ads, Meta Marketing API, Google Drive, OpenAI |
 | Hosting | Vercel |
 
 ## Quick Start
@@ -30,18 +31,19 @@ AI-native CRM and operating system for digital marketing agencies. Built with Ne
 ```bash
 npm install
 cp .env.example .env.local
-# Add Supabase credentials (optional for demo mode)
+# Fill in DATABASE_URL, Clerk keys, integration credentials
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Without Supabase configured, the app runs in **demo mode** with sample data.
+Open [http://localhost:3000](http://localhost:3000). Requires Clerk + Neon configured.
 
-## Supabase Setup
+## Database migrations
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Run migrations from `supabase/migrations/`
-3. Run `supabase/seed.sql` for sample data
-4. Add credentials to `.env.local`
+```bash
+node scripts/migrate.mjs
+```
+
+Migrations live in `neon/migrations/` (001–005).
 
 ## Scripts
 
@@ -52,13 +54,11 @@ Open [http://localhost:3000](http://localhost:3000). Without Supabase configured
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript check |
 | `npm run test` | Unit tests (Vitest) |
-| `npm run test:e2e` | E2E tests (Playwright) |
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md)
-- [Database](docs/DATABASE.md)
-- [Deployment](docs/DEPLOYMENT.md)
+- [Neon setup](docs/NEON.md)
+- [Google Drive](docs/GOOGLE_DRIVE.md)
 - [Developer Guide](docs/DEVELOPER.md)
 
 ## License

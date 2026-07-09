@@ -1,11 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import type { SessionUser } from "@/types";
-import {
-  isClerkConfigured,
-  isDatabaseConfigured,
-  isDemoMode,
-} from "@/lib/config";
-import { DEMO_USER } from "@/lib/demo/data";
+import { isClerkConfigured, isDatabaseConfigured } from "@/lib/config";
 import {
   ensureProfileForClerkUser,
   getUserByClerkId,
@@ -14,11 +9,7 @@ import {
 } from "@/lib/db/users";
 
 export async function getSessionUser(): Promise<SessionUser | null> {
-  if (!isDatabaseConfigured() || (isDemoMode() && !isClerkConfigured())) {
-    return DEMO_USER;
-  }
-
-  if (!isClerkConfigured()) {
+  if (!isDatabaseConfigured() || !isClerkConfigured()) {
     return null;
   }
 
@@ -54,13 +45,15 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     fullName: profile.full_name,
     roles: roles.length > 0 ? roles : ["manager"],
     avatarUrl: profile.avatar_url ?? clerkUser.imageUrl ?? null,
+    approvalStatus: profile.approval_status,
   };
 }
 
 export async function requireAuth(): Promise<SessionUser> {
   const user = await getSessionUser();
-  if (!user) {
-    throw new Error("Unauthorized");
+  if (!user) throw new Error("Unauthorized");
+  if (user.approvalStatus !== "approved") {
+    throw new Error("Account pending approval");
   }
   return user;
 }

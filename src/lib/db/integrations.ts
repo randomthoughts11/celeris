@@ -59,3 +59,25 @@ export async function disconnectIntegration(
     WHERE company_id = ${companyId} AND provider = ${provider}
   `;
 }
+
+export async function setLookerEmbedUrl(
+  companyId: string,
+  provider: "meta_ads" | "google_ads",
+  embedUrl: string | null
+): Promise<void> {
+  const existing = await getIntegration(companyId, provider);
+  const config = { ...(existing?.config ?? {}) };
+
+  if (embedUrl) {
+    config.lookerEmbedUrl = embedUrl;
+  } else {
+    delete config.lookerEmbedUrl;
+  }
+
+  await upsertIntegration({
+    companyId,
+    provider,
+    isConnected: existing?.is_connected ?? Boolean(embedUrl),
+    config,
+  });
+}

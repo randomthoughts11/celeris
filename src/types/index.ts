@@ -1,3 +1,5 @@
+export type ApprovalStatus = "pending" | "approved" | "rejected";
+
 export type UserRole = "god_mode" | "manager" | "designer" | "telecaller" | "admin";
 
 export type LeadStatus =
@@ -69,6 +71,7 @@ export interface Profile {
   avatar_url: string | null;
   phone: string | null;
   is_active: boolean;
+  approval_status: ApprovalStatus;
   created_at: string;
   updated_at: string;
 }
@@ -299,6 +302,54 @@ export interface SessionUser {
   fullName: string;
   roles: UserRole[];
   avatarUrl: string | null;
+  approvalStatus: ApprovalStatus;
+}
+
+export interface AgencyAdAccount {
+  id: string;
+  name: string;
+  currency?: string;
+}
+
+export interface ChatRoom {
+  id: string;
+  company_id: string | null;
+  name: string;
+  is_dm: boolean;
+  created_by: string | null;
+  created_at: string;
+  unread_count?: number;
+  last_message?: string | null;
+  last_message_at?: string | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  room_id: string;
+  sender_id: string;
+  sender_name?: string;
+  sender_avatar?: string | null;
+  content: string;
+  created_at: string;
+}
+
+export interface CompanyMember {
+  id: string;
+  company_id: string;
+  user_id: string;
+  role: UserRole;
+  user_email?: string;
+  user_name?: string;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  full_name: string;
+  avatar_url: string | null;
+  approval_status: ApprovalStatus;
+  roles: UserRole[];
+  created_at: string;
 }
 
 export interface DriveFile {

@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { generateAiCaption } from "@/features/scheduler/actions";
+import { generateAiCaption, saveSocialPostAction } from "@/features/scheduler/actions";
 import { DriveFileUpload } from "@/components/drive/drive-file-upload";
 import type { SocialPost, SocialPlatform } from "@/types";
 
@@ -155,12 +155,26 @@ export function SchedulerClient({ posts, companyId }: SchedulerClientProps) {
               </div>
               <Button
                 className="w-full"
+                disabled={isPending || !caption.trim()}
                 onClick={() => {
-                  toast.success("Post saved as draft");
-                  setOpen(false);
+                  startTransition(async () => {
+                    await saveSocialPostAction(companyId, {
+                      caption,
+                      platforms: [platform],
+                      status: scheduledAt ? "scheduled" : "draft",
+                      scheduledAt: scheduledAt || undefined,
+                      mediaUrls: attachedFiles,
+                    });
+                    toast.success(scheduledAt ? "Post scheduled" : "Draft saved");
+                    setOpen(false);
+                    setCaption("");
+                    setScheduledAt("");
+                    setAttachedFiles([]);
+                    window.location.reload();
+                  });
                 }}
               >
-                Save Draft
+                {scheduledAt ? "Schedule Post" : "Save Draft"}
               </Button>
             </div>
           </DialogContent>

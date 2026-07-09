@@ -8,7 +8,7 @@ export default async function AppLayout({
 }) {
   const user = await getSessionUser();
 
-  if (!user) {
+  if (!user || user.approvalStatus !== "approved") {
     return children;
   }
 

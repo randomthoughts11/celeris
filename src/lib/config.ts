@@ -15,8 +15,3 @@ export function isClerkConfigured(): boolean {
 export function isAuthConfigured(): boolean {
   return isDatabaseConfigured() && isClerkConfigured();
 }
-
-/** Client-safe demo flag — set NEXT_PUBLIC_DEMO_MODE=true only when no database */
-export function isDemoMode(): boolean {
-  return process.env.NEXT_PUBLIC_DEMO_MODE === "true";
-}

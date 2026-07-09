@@ -16,6 +16,8 @@ export const PERMISSIONS = {
   IMPERSONATE: ["god_mode"] as UserRole[],
   MANAGE_ALL_COMPANIES: ["god_mode", "admin"] as UserRole[],
   ACCESS_LEADS: ["god_mode", "manager", "admin", "telecaller"] as UserRole[],
+  LOG_CALLS: ["god_mode", "manager", "admin", "telecaller"] as UserRole[],
+  MANAGE_OWN_LEADS: ["telecaller"] as UserRole[],
   SCHEDULE_POSTS: ["god_mode", "manager", "designer", "admin"] as UserRole[],
   APPROVE_POSTS: ["god_mode", "manager", "admin"] as UserRole[],
 } as const;

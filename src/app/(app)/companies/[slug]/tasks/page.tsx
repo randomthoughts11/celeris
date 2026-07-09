@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import { TasksBoard } from "@/components/tasks/tasks-board";
 import { getTasks } from "@/features/companies/company-data";
 import { getCompanyBySlug } from "@/features/companies/queries";
+import { requireCompanyPageAccess } from "@/lib/auth/page-guards";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
 export default async function TasksPage({ params }: PageProps) {
+  await requireCompanyPageAccess("tasks");
   const { slug } = await params;
   const company = await getCompanyBySlug(slug);
   if (!company) notFound();
@@ -30,7 +32,7 @@ export default async function TasksPage({ params }: PageProps) {
           {tasks.length} tasks · {overdue} overdue
         </p>
       </div>
-      <TasksBoard tasks={tasks} />
+      <TasksBoard tasks={tasks} companyId={company.id} />
     </div>
   );
 }

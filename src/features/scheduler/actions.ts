@@ -1,36 +1,88 @@
 "use server";
 
-import type { SocialPlatform } from "@/types";
-
-const CAPTION_TEMPLATES: Record<SocialPlatform, string[]> = {
-  instagram: [
-    "Transform your brand with data-driven marketing. 🚀 Ready to scale? Link in bio.",
-    "Behind every great campaign is great strategy. Here's what we're building this week ✨",
-    "Results speak louder than promises. Swipe to see what's possible. 📈",
-  ],
-  facebook: [
-    "Discover how smart marketing drives real business growth. Learn more today.",
-    "Your audience is waiting. Let's create content that converts.",
-  ],
-  linkedin: [
-    "Marketing isn't about shouting louder — it's about connecting smarter. Here's our take on what's working in 2026.",
-    "Data-driven decisions. Creative execution. Measurable results. That's how we help brands grow.",
-  ],
-  x: [
-    "Hot take: The best campaigns aren't the loudest — they're the most targeted. 🎯",
-    "ROAS > vanity metrics. Every time.",
-  ],
-  youtube: [
-    "New video: How we helped a client 3x their ROAS in 90 days. Watch now!",
-    "The marketing playbook is changing. Here's what agencies need to know in 2026.",
-  ],
-};
+import { revalidatePath } from "next/cache";
+import { requireAuth } from "@/lib/auth/session";
+import { requireCompanyAccess } from "@/lib/auth/access";
+import { getSql } from "@/lib/db/client";
+import type { PostStatus, SocialPlatform } from "@/types";
 
 export async function generateAiCaption(
-  _companyId: string,
-  platform: SocialPlatform
+  companyId: string,
+  platform: SocialPlatform,
+  topic?: string
 ): Promise<{ caption?: string; error?: string }> {
-  const templates = CAPTION_TEMPLATES[platform];
-  const caption = templates[Math.floor(Math.random() * templates.length)];
-  return { caption };
+  const user = await requireAuth();
+  await requireCompanyAccess(user, companyId);
+
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return { error: "OpenAI API key not configured" };
+  }
+
+  const model = process.env.EXTRACTION_MODEL ?? "gpt-4.1-mini";
+  const res = await fetch(
+    process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You write concise, engaging social media captions for digital marketing agencies. Return only the caption text, no quotes.",
+          },
+          {
+            role: "user",
+            content: `Write a ${platform} caption${topic ? ` about: ${topic}` : " for a marketing agency client"}.`,
+          },
+        ],
+        max_tokens: 200,
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    return { error: "Failed to generate caption" };
+  }
+
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const caption = data.choices?.[0]?.message?.content?.trim();
+  return caption ? { caption } : { error: "No caption generated" };
+}
+
+export async function saveSocialPostAction(
+  companyId: string,
+  input: {
+    caption: string;
+    platforms: SocialPlatform[];
+    status: PostStatus;
+    scheduledAt?: string;
+    mediaUrls?: string[];
+  }
+) {
+  const user = await requireAuth();
+  await requireCompanyAccess(user, companyId);
+
+  const sql = getSql();
+  await sql`
+    INSERT INTO social_posts (company_id, created_by, caption, platforms, status, scheduled_at, media_urls, ai_generated)
+    VALUES (
+      ${companyId}, ${user.id}, ${input.caption},
+      ${input.platforms},
+      ${input.status},
+      ${input.scheduledAt ?? null},
+      ${input.mediaUrls ?? []},
+      false
+    )
+  `;
+
+  revalidatePath(`/companies`);
+  return { success: true };
 }

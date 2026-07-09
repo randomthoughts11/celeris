@@ -9,6 +9,7 @@ import {
   getPerformanceSnapshots,
 } from "@/features/companies/company-data";
 import { getCompanyBySlug } from "@/features/companies/queries";
+import { requireCompanyPageAccess } from "@/lib/auth/page-guards";
 import { formatCurrency, formatRoas } from "@/lib/format";
 
 interface PageProps {
@@ -16,6 +17,7 @@ interface PageProps {
 }
 
 export default async function AnalyticsPage({ params }: PageProps) {
+  await requireCompanyPageAccess("analytics");
   const { slug } = await params;
   const company = await getCompanyBySlug(slug);
   if (!company) notFound();
@@ -112,7 +114,7 @@ export default async function AnalyticsPage({ params }: PageProps) {
       </div>
 
       {budgetInsights.length > 0 && (
-        <AiInsightsPanel insights={budgetInsights} />
+        <AiInsightsPanel insights={budgetInsights} companyId={company.id} />
       )}
     </div>
   );

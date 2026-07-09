@@ -6,33 +6,40 @@ import { UserButton } from "@clerk/nextjs";
 import { motion } from "framer-motion";
 import {
   BarChart3,
-  Bell,
   Building2,
   Calendar,
-  LayoutDashboard,
-  Megaphone,
-  Phone,
-  Share2,
-  Target,
   CheckSquare,
   HardDrive,
+  LayoutDashboard,
+  Megaphone,
+  MessageSquare,
+  Phone,
+  Settings,
+  Share2,
+  Shield,
+  Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import type { SessionUser } from "@/types";
-import { ROLE_LABELS } from "@/lib/rbac/permissions";
+import { hasPermission, ROLE_LABELS } from "@/lib/rbac/permissions";
+import {
+  canSeeCompanyNavItem,
+  canSeeGlobalNav,
+  isTelecallerFocused,
+} from "@/lib/rbac/nav";
+import { NotificationsBell } from "@/components/layout/notifications-bell";
 
 const companyNav = [
-  { href: "", label: "Overview", icon: LayoutDashboard },
-  { href: "/google-ads", label: "Google Ads", icon: Megaphone },
-  { href: "/meta-ads", label: "Meta Ads", icon: Target },
-  { href: "/social", label: "Social", icon: Share2 },
-  { href: "/scheduler", label: "Scheduler", icon: Calendar },
-  { href: "/drive", label: "Drive", icon: HardDrive },
-  { href: "/leads", label: "Leads", icon: Building2 },
-  { href: "/tasks", label: "Tasks", icon: CheckSquare },
-  { href: "/ringcentral", label: "Calls", icon: Phone },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
+  { key: "overview" as const, href: "", label: "Overview", icon: LayoutDashboard },
+  { key: "google-ads" as const, href: "/google-ads", label: "Google Ads", icon: Megaphone },
+  { key: "meta-ads" as const, href: "/meta-ads", label: "Meta Ads", icon: Target },
+  { key: "social" as const, href: "/social", label: "Social", icon: Share2 },
+  { key: "scheduler" as const, href: "/scheduler", label: "Scheduler", icon: Calendar },
+  { key: "drive" as const, href: "/drive", label: "Drive", icon: HardDrive },
+  { key: "leads" as const, href: "/leads", label: "Leads", icon: Building2 },
+  { key: "tasks" as const, href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { key: "calls" as const, href: "/ringcentral", label: "Call log", icon: Phone },
+  { key: "analytics" as const, href: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
 interface AppShellProps {
@@ -49,10 +56,24 @@ function formatSlugAsName(slug: string): string {
 
 export function AppShell({ user, children }: AppShellProps) {
   const pathname = usePathname();
-  const isHome = pathname === "/";
+  const telecallerMode = isTelecallerFocused(user.roles);
+  const isHome = pathname === "/" || pathname === "/telecaller";
   const companySlug = pathname.match(/^\/companies\/([^/]+)/)?.[1];
   const companyName = companySlug ? formatSlugAsName(companySlug) : undefined;
   const basePath = companySlug ? `/companies/${companySlug}` : "";
+  const showAdmin = hasPermission(user.roles, "MANAGE_USERS");
+
+  const visibleCompanyNav = companyNav.filter((item) =>
+    canSeeCompanyNavItem(user.roles, item.key)
+  );
+
+  const globalNav = [
+    { key: "chat" as const, href: "/chat", label: "Chat", icon: MessageSquare },
+    { key: "settings" as const, href: "/settings", label: "Settings", icon: Settings },
+    ...(showAdmin
+      ? [{ key: "admin" as const, href: "/admin", label: "Admin", icon: Shield }]
+      : []),
+  ].filter((item) => canSeeGlobalNav(user.roles, item.key));
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,7 +86,10 @@ export function AppShell({ user, children }: AppShellProps) {
       <header className="sticky top-0 z-50 border-b border-white/5 bg-background/60 backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between px-6">
           <div className="flex items-center gap-6">
-            <Link href="/" className="flex items-center gap-2">
+            <Link
+              href={telecallerMode ? "/telecaller" : "/"}
+              className="flex items-center gap-2"
+            >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-blue-600">
                 <span className="text-sm font-bold text-white">A</span>
               </div>
@@ -74,7 +98,29 @@ export function AppShell({ user, children }: AppShellProps) {
               </span>
             </Link>
 
-            {!isHome && companySlug && (
+            <nav className="hidden items-center gap-1 md:flex">
+              {globalNav.map((item) => {
+                const Icon = item.icon;
+                const active = pathname.startsWith(item.href);
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <span
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors",
+                        active
+                          ? "bg-white/10 text-foreground"
+                          : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {!isHome && companySlug && !telecallerMode && (
               <nav className="hidden items-center gap-1 lg:flex">
                 <Link
                   href="/"
@@ -89,10 +135,7 @@ export function AppShell({ user, children }: AppShellProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-violet-500" />
-            </Button>
+            <NotificationsBell userId={user.id} />
 
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium leading-none">{user.fullName}</p>
@@ -103,19 +146,17 @@ export function AppShell({ user, children }: AppShellProps) {
 
             <UserButton
               appearance={{
-                elements: {
-                  avatarBox: "h-8 w-8",
-                },
+                elements: { avatarBox: "h-8 w-8" },
               }}
             />
           </div>
         </div>
 
-        {companySlug && (
+        {companySlug && visibleCompanyNav.length > 0 && (
           <div className="border-t border-white/5">
             <div className="mx-auto max-w-[1600px] overflow-x-auto px-6">
               <nav className="flex gap-1 py-2">
-                {companyNav.map((item) => {
+                {visibleCompanyNav.map((item) => {
                   const href = `${basePath}${item.href}`;
                   const isActive =
                     item.href === ""

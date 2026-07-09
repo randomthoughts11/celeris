@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { AiInsightsPanel } from "@/components/ai/insights-panel";
+import { CompanyEditDialog } from "@/components/companies/company-edit-dialog";
+import { CompanyHeaderActions } from "@/components/companies/company-header-actions";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
 import { Progress } from "@/components/ui/progress";
@@ -9,6 +11,8 @@ import {
   getPerformanceSnapshots,
 } from "@/features/companies/company-data";
 import { getCompanyBySlug } from "@/features/companies/queries";
+import { requireCompanyPageAccess } from "@/lib/auth/page-guards";
+import { canManageCompanies } from "@/lib/auth/access";
 import {
   formatCurrency,
   formatPercent,
@@ -20,6 +24,7 @@ interface PageProps {
 }
 
 export default async function CompanyOverviewPage({ params }: PageProps) {
+  const user = await requireCompanyPageAccess("overview");
   const { slug } = await params;
   const company = await getCompanyBySlug(slug);
   if (!company) notFound();
@@ -39,13 +44,19 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Executive Overview
-        </h1>
-        <p className="text-muted-foreground">
-          Real-time performance for {company.name}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Executive Overview
+          </h1>
+          <p className="text-muted-foreground">
+            Live data for {company.name}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {canManageCompanies(user) && <CompanyEditDialog company={company} />}
+          <CompanyHeaderActions companyId={company.id} />
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -147,7 +158,7 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
         />
       </div>
 
-      <AiInsightsPanel insights={insights} />
+      <AiInsightsPanel insights={insights} companyId={company.id} />
     </div>
   );
 }
