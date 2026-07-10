@@ -69,6 +69,8 @@ function mapRoom(row: Record<string, unknown>): ChatRoom {
   return {
     id: row.id as string,
     company_id: (row.company_id as string) ?? null,
+    company_name: (row.company_name as string) ?? null,
+    company_slug: (row.company_slug as string) ?? null,
     name: row.name as string,
     is_dm: row.is_dm as boolean,
     created_by: (row.created_by as string) ?? null,
@@ -80,6 +82,8 @@ export async function listUserRooms(userId: string): Promise<ChatRoom[]> {
   const sql = getSql();
   const rows = await sql`
     SELECT r.*,
+      c.name AS company_name,
+      c.slug AS company_slug,
       (SELECT content FROM chat_messages WHERE room_id = r.id ORDER BY created_at DESC LIMIT 1) AS last_message,
       (SELECT created_at FROM chat_messages WHERE room_id = r.id ORDER BY created_at DESC LIMIT 1) AS last_message_at,
       (
@@ -90,6 +94,7 @@ export async function listUserRooms(userId: string): Promise<ChatRoom[]> {
       ) AS unread_count
     FROM chat_rooms r
     JOIN chat_room_members m ON m.room_id = r.id AND m.user_id = ${userId}
+    LEFT JOIN companies c ON c.id = r.company_id
     ORDER BY last_message_at DESC NULLS LAST, r.created_at DESC
   `;
   return rows.map((r) => ({
@@ -106,7 +111,18 @@ export async function listRoomMessages(
 ): Promise<ChatMessage[]> {
   const sql = getSql();
   const rows = await sql`
-    SELECT cm.*, p.full_name AS sender_name, p.avatar_url AS sender_avatar
+    SELECT cm.*,
+      p.full_name AS sender_name,
+      p.avatar_url AS sender_avatar,
+      COALESCE(
+        (
+          SELECT array_agg(DISTINCT co.name ORDER BY co.name)
+          FROM company_members mem
+          JOIN companies co ON co.id = mem.company_id AND co.is_active = true
+          WHERE mem.user_id = cm.sender_id
+        ),
+        ARRAY[]::text[]
+      ) AS sender_companies
     FROM chat_messages cm
     JOIN profiles p ON p.id = cm.sender_id
     WHERE cm.room_id = ${roomId}
@@ -119,6 +135,7 @@ export async function listRoomMessages(
     sender_id: r.sender_id as string,
     sender_name: r.sender_name as string,
     sender_avatar: (r.sender_avatar as string) ?? null,
+    sender_companies: (r.sender_companies as string[]) ?? [],
     content: r.content as string,
     created_at: String(r.created_at),
   }));
@@ -136,12 +153,19 @@ export async function sendMessage(
     RETURNING *
   `;
   const profile = await sql`SELECT full_name, avatar_url FROM profiles WHERE id = ${senderId}`;
+  const companies = await sql`
+    SELECT array_agg(DISTINCT co.name ORDER BY co.name) AS names
+    FROM company_members mem
+    JOIN companies co ON co.id = mem.company_id AND co.is_active = true
+    WHERE mem.user_id = ${senderId}
+  `;
   return {
     id: rows[0].id as string,
     room_id: roomId,
     sender_id: senderId,
     sender_name: profile[0]?.full_name as string,
     sender_avatar: (profile[0]?.avatar_url as string) ?? null,
+    sender_companies: (companies[0]?.names as string[]) ?? [],
     content,
     created_at: String(rows[0].created_at),
   };

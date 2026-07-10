@@ -27,15 +27,18 @@ import {
   createCompanyAction,
   fetchAdAccountsAction,
 } from "@/features/companies/actions";
-import type { AgencyAdAccount, CompanyWithMetrics, SessionUser, UserRole } from "@/types";
+import type { AgencyAdAccount, CompanyWithMetrics, SessionUser } from "@/types";
+import type { TaskWithAssignee } from "@/lib/db/tasks";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { AgencyCommandCenter } from "@/components/dashboard/agency-command-center";
 
 interface HomeClientProps {
   companies: CompanyWithMetrics[];
   user: SessionUser;
+  agencyTasks: TaskWithAssignee[];
 }
 
-export function HomeClient({ companies, user }: HomeClientProps) {
+export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -207,6 +210,8 @@ export function HomeClient({ companies, user }: HomeClientProps) {
           </Dialog>
         )}
       </div>
+
+      {canManage && <AgencyCommandCenter tasks={agencyTasks} />}
 
       {companies.length === 0 ? (
         <div className="rounded-xl border border-dashed border-white/10 py-16 text-center">

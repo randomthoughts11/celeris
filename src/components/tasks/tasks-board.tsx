@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { LogTaskTimeButton } from "@/components/tasks/log-task-time-button";
 import {
   createTaskAction,
   updateTaskStatusAction,
@@ -56,17 +57,24 @@ const typeLabels: Record<string, string> = {
   other: "Other",
 };
 
+interface TaskMember {
+  id: string;
+  name: string;
+}
+
 interface TasksBoardProps {
   tasks: Task[];
   companyId: string;
+  members: TaskMember[];
 }
 
-export function TasksBoard({ tasks, companyId }: TasksBoardProps) {
+export function TasksBoard({ tasks, companyId, members }: TasksBoardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [taskType, setTaskType] = useState("other");
   const [priority, setPriority] = useState("medium");
+  const [assigneeId, setAssigneeId] = useState("");
   const columns = ["todo", "in_progress", "review", "done"] as const;
 
   const changeStatus = (taskId: string, status: TaskStatus) => {
@@ -82,6 +90,7 @@ export function TasksBoard({ tasks, companyId }: TasksBoardProps) {
     const formData = new FormData(form);
     formData.set("taskType", taskType);
     formData.set("priority", priority);
+    if (assigneeId) formData.set("assigneeId", assigneeId);
     startTransition(async () => {
       const result = await createTaskAction(companyId, formData);
       if (result.error) toast.error(result.error);
@@ -159,6 +168,27 @@ export function TasksBoard({ tasks, companyId }: TasksBoardProps) {
                 <Label htmlFor="dueDate">Due date</Label>
                 <Input id="dueDate" name="dueDate" type="date" />
               </div>
+              {members.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Assign to</Label>
+                  <Select
+                    value={assigneeId}
+                    onValueChange={(v) => setAssigneeId(v ?? "")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Unassigned" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Unassigned</SelectItem>
+                      {members.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <Button type="submit" disabled={pending}>
                 Create
               </Button>
@@ -184,6 +214,7 @@ export function TasksBoard({ tasks, companyId }: TasksBoardProps) {
                     key={task.id}
                     task={task}
                     index={i}
+                    companyId={companyId}
                     onStatusChange={changeStatus}
                     disabled={pending}
                   />
@@ -200,11 +231,13 @@ export function TasksBoard({ tasks, companyId }: TasksBoardProps) {
 function TaskCard({
   task,
   index,
+  companyId,
   onStatusChange,
   disabled,
 }: {
-  task: Task;
+  task: Task & { assignee_name?: string | null; time_logged_minutes?: number };
   index: number;
+  companyId: string;
   onStatusChange: (taskId: string, status: TaskStatus) => void;
   disabled: boolean;
 }) {
@@ -236,6 +269,9 @@ function TaskCard({
           ) : null}
         </div>
         <p className="mt-2 font-medium">{task.title}</p>
+        {task.assignee_name && (
+          <p className="mt-1 text-xs text-muted-foreground">→ {task.assignee_name}</p>
+        )}
         {task.description && (
           <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
             {task.description}
@@ -252,7 +288,12 @@ function TaskCard({
             {overdue && " · Overdue"}
           </p>
         )}
-        <div className="mt-3">
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <LogTaskTimeButton
+            taskId={task.id}
+            companyId={companyId}
+            loggedMinutes={task.time_logged_minutes}
+          />
           <Select
             value={task.status}
             onValueChange={(v) => onStatusChange(task.id, v as TaskStatus)}

@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
-import { SchedulerClient } from "@/components/scheduler/scheduler-client";
-import { getSocialPosts } from "@/features/companies/company-data";
+import { PublishingHub } from "@/components/scheduler/publishing-hub";
 import { getCompanyBySlug } from "@/features/companies/queries";
 import { requireCompanyPageAccess } from "@/lib/auth/page-guards";
 
@@ -14,7 +13,7 @@ export default async function SchedulerPage({ params }: PageProps) {
   const company = await getCompanyBySlug(slug);
   if (!company) notFound();
 
-  const posts = await getSocialPosts(company.id);
-
-  return <SchedulerClient posts={posts} companyId={company.id} />;
+  return (
+    <PublishingHub companyName={company.name} companyWebsite={company.website} />
+  );
 }

@@ -1,4 +1,5 @@
 import { getSql, toNumber } from "./client";
+import { overlayLiveMetrics } from "./live-metrics";
 import type {
   AiInsight,
   CompanyMetrics,
@@ -71,10 +72,12 @@ export async function fetchCompanies(
   const metricsByCompany = new Map(
     metrics.map((m) => [m.company_id as string, mapMetrics(m)])
   );
-  return companies.map((c) => ({
-    ...mapCompany(c),
-    metrics: metricsByCompany.get(c.id as string) ?? null,
-  }));
+  return overlayLiveMetrics(
+    companies.map((c) => ({
+      ...mapCompany(c),
+      metrics: metricsByCompany.get(c.id as string) ?? null,
+    }))
+  );
 }
 
 export async function fetchCompanyBySlug(
@@ -90,7 +93,8 @@ export async function fetchCompanyBySlug(
     SELECT * FROM company_metrics WHERE company_id = ${company.id} LIMIT 1
   `;
   company.metrics = metricsRows[0] ? mapMetrics(metricsRows[0]) : null;
-  return company;
+  const [enriched] = await overlayLiveMetrics([company]);
+  return enriched;
 }
 
 export async function fetchCompanyById(
@@ -106,7 +110,8 @@ export async function fetchCompanyById(
     SELECT * FROM company_metrics WHERE company_id = ${company.id} LIMIT 1
   `;
   company.metrics = metricsRows[0] ? mapMetrics(metricsRows[0]) : null;
-  return company;
+  const [enriched] = await overlayLiveMetrics([company]);
+  return enriched;
 }
 
 export async function fetchPerformanceSnapshots(

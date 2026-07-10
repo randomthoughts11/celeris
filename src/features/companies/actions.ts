@@ -166,6 +166,19 @@ export async function setLookerEmbedAction(
   return { success: true };
 }
 
+export async function fetchCompanyMembersAction(companyId: string) {
+  const user = await requireAuth();
+  await requireCompanyAccess(user, companyId);
+  const { getCompanyMembers } = await import("@/lib/db/companies");
+  const rows = await getCompanyMembers(companyId);
+  return rows.map((r) => ({
+    id: r.user_id as string,
+    name: (r.user_name as string) ?? (r.user_email as string),
+    email: r.user_email as string,
+    role: r.role as string,
+  }));
+}
+
 export async function fetchAdAccountsAction() {
   const user = await requireAuth();
   if (!canManageCompanies(user)) {

@@ -18,6 +18,7 @@ import {
   Share2,
   Shield,
   Target,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/types";
@@ -34,7 +35,7 @@ const companyNav = [
   { key: "google-ads" as const, href: "/google-ads", label: "Google Ads", icon: Megaphone },
   { key: "meta-ads" as const, href: "/meta-ads", label: "Meta Ads", icon: Target },
   { key: "social" as const, href: "/social", label: "Social", icon: Share2 },
-  { key: "scheduler" as const, href: "/scheduler", label: "Scheduler", icon: Calendar },
+  { key: "scheduler" as const, href: "/scheduler", label: "Publishing", icon: Calendar },
   { key: "drive" as const, href: "/drive", label: "Drive", icon: HardDrive },
   { key: "leads" as const, href: "/leads", label: "Leads", icon: Building2 },
   { key: "tasks" as const, href: "/tasks", label: "Tasks", icon: CheckSquare },
@@ -62,6 +63,7 @@ export function AppShell({ user, children }: AppShellProps) {
   const companyName = companySlug ? formatSlugAsName(companySlug) : undefined;
   const basePath = companySlug ? `/companies/${companySlug}` : "";
   const showAdmin = hasPermission(user.roles, "MANAGE_USERS");
+  const showTeam = hasPermission(user.roles, "MANAGE_ALL_COMPANIES");
 
   const visibleCompanyNav = companyNav.filter((item) =>
     canSeeCompanyNavItem(user.roles, item.key)
@@ -69,6 +71,9 @@ export function AppShell({ user, children }: AppShellProps) {
 
   const globalNav = [
     { key: "chat" as const, href: "/chat", label: "Chat", icon: MessageSquare },
+    ...(showTeam
+      ? [{ key: "team" as const, href: "/team", label: "Team", icon: Users }]
+      : []),
     { key: "settings" as const, href: "/settings", label: "Settings", icon: Settings },
     ...(showAdmin
       ? [{ key: "admin" as const, href: "/admin", label: "Admin", icon: Shield }]

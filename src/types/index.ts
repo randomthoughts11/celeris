@@ -108,6 +108,8 @@ export interface CompanyMetrics {
   active_campaigns: number;
   social_posting_status: string;
   updated_at: string;
+  /** Live overlay — open tasks for this brand */
+  open_tasks?: number;
 }
 
 export interface CompanyWithMetrics extends Company {
@@ -314,6 +316,8 @@ export interface AgencyAdAccount {
 export interface ChatRoom {
   id: string;
   company_id: string | null;
+  company_name?: string | null;
+  company_slug?: string | null;
   name: string;
   is_dm: boolean;
   created_by: string | null;
@@ -329,6 +333,7 @@ export interface ChatMessage {
   sender_id: string;
   sender_name?: string;
   sender_avatar?: string | null;
+  sender_companies?: string[];
   content: string;
   created_at: string;
 }

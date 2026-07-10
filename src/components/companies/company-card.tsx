@@ -7,7 +7,7 @@ import {
   Heart,
   Megaphone,
   Share2,
-  TrendingUp,
+  CheckSquare,
   Users,
   Wallet,
 } from "lucide-react";
@@ -123,9 +123,9 @@ export function CompanyCard({ company, index }: CompanyCardProps) {
                 value={formatNumber(metrics?.leads_count ?? 0)}
               />
               <KpiItem
-                icon={TrendingUp}
-                label="ROAS"
-                value={`${(metrics?.roas ?? 0).toFixed(1)}x`}
+                icon={CheckSquare}
+                label="Tasks"
+                value={formatNumber(metrics?.open_tasks ?? 0)}
               />
             </div>
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth/session";
 import { requireCompanyAccess } from "@/lib/auth/access";
+import { logAudit } from "@/lib/db/audit";
 import { getSql } from "@/lib/db/client";
 import type { LeadPriority, LeadStatus } from "@/types";
 
@@ -14,7 +15,7 @@ export async function createLeadAction(companyId: string, formData: FormData) {
   if (!firstName) return { error: "First name required" };
 
   const sql = getSql();
-  await sql`
+  const rows = await sql`
     INSERT INTO leads (company_id, owner_id, first_name, last_name, email, phone, source, status, priority, notes)
     VALUES (
       ${companyId}, ${user.id},
@@ -27,7 +28,17 @@ export async function createLeadAction(companyId: string, formData: FormData) {
       ${(String(formData.get("priority") ?? "medium") as LeadPriority)},
       ${String(formData.get("notes") ?? "") || null}
     )
+    RETURNING id
   `;
+
+  await logAudit({
+    userId: user.id,
+    companyId,
+    action: "lead.created",
+    resourceType: "lead",
+    resourceId: rows[0].id as string,
+    newValues: { firstName },
+  });
 
   revalidatePath(`/companies`);
   return { success: true };
