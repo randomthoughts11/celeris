@@ -22,13 +22,14 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/types";
-import { hasPermission, ROLE_LABELS } from "@/lib/rbac/permissions";
+import { hasPermission, ROLE_LABELS, hasAnyRole } from "@/lib/rbac/permissions";
 import {
   canSeeCompanyNavItem,
   canSeeGlobalNav,
   isTelecallerFocused,
 } from "@/lib/rbac/nav";
 import { NotificationsBell } from "@/components/layout/notifications-bell";
+import { ClockWidget } from "@/components/workforce/clock-widget";
 
 const companyNav = [
   { key: "overview" as const, href: "", label: "Overview", icon: LayoutDashboard },
@@ -63,7 +64,7 @@ export function AppShell({ user, children }: AppShellProps) {
   const companyName = companySlug ? formatSlugAsName(companySlug) : undefined;
   const basePath = companySlug ? `/companies/${companySlug}` : "";
   const showAdmin = hasPermission(user.roles, "MANAGE_USERS");
-  const showTeam = hasPermission(user.roles, "MANAGE_ALL_COMPANIES");
+  const showTeam = hasAnyRole(user.roles, ["god_mode", "admin", "manager"]);
 
   const visibleCompanyNav = companyNav.filter((item) =>
     canSeeCompanyNavItem(user.roles, item.key)
@@ -140,6 +141,7 @@ export function AppShell({ user, children }: AppShellProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            <ClockWidget />
             <NotificationsBell userId={user.id} />
 
             <div className="hidden text-right sm:block">

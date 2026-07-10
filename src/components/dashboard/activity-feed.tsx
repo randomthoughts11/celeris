@@ -6,6 +6,8 @@ const actionLabels: Record<string, string> = {
   "task.created": "created a task",
   "task.status_changed": "updated task status",
   "task.time_logged": "logged time on a task",
+  "shift.clock_in": "clocked in",
+  "shift.clock_out": "clocked out",
   "lead.created": "added a lead",
   "lead.updated": "updated a lead",
   "company.created": "created a company",

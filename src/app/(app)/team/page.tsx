@@ -2,28 +2,32 @@ import Link from "next/link";
 import { format, isPast } from "date-fns";
 import { redirect } from "next/navigation";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
+import { TeamAttendancePanel } from "@/components/dashboard/team-attendance-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getAccessibleCompanyIds } from "@/lib/auth/access";
 import { getSessionUser } from "@/lib/auth/session";
 import { fetchRecentAuditLogs } from "@/lib/db/audit";
 import { fetchAgencyTasks, fetchEmployeeWorkload } from "@/lib/db/tasks";
-import { hasPermission } from "@/lib/rbac/permissions";
+import { fetchActiveShifts, fetchRecentShifts } from "@/lib/db/work-shifts";
+import { hasAnyRole } from "@/lib/rbac/permissions";
 import { cn } from "@/lib/utils";
 
 export default async function TeamDashboardPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
   if (user.approvalStatus !== "approved") redirect("/pending-approval");
-  if (!hasPermission(user.roles, "MANAGE_ALL_COMPANIES")) {
+  if (!hasAnyRole(user.roles, ["god_mode", "admin", "manager"])) {
     redirect("/");
   }
 
   const accessible = await getAccessibleCompanyIds(user);
-  const [workload, tasks, activity] = await Promise.all([
+  const [workload, tasks, activity, activeShifts, recentShifts] = await Promise.all([
     fetchEmployeeWorkload(accessible),
     fetchAgencyTasks(accessible),
     fetchRecentAuditLogs(30, accessible),
+    fetchActiveShifts(),
+    fetchRecentShifts(30),
   ]);
 
   return (
@@ -35,7 +39,7 @@ export default async function TeamDashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-white/5 bg-white/[0.03] p-5">
           <p className="text-sm text-muted-foreground">Open tasks</p>
           <p className="text-3xl font-semibold">{tasks.length}</p>
@@ -45,12 +49,18 @@ export default async function TeamDashboardPage() {
           <p className="text-3xl font-semibold">{workload.length}</p>
         </Card>
         <Card className="border-white/5 bg-white/[0.03] p-5">
+          <p className="text-sm text-muted-foreground">On the clock</p>
+          <p className="text-3xl font-semibold text-emerald-400">{activeShifts.length}</p>
+        </Card>
+        <Card className="border-white/5 bg-white/[0.03] p-5">
           <p className="text-sm text-muted-foreground">Overdue</p>
           <p className="text-3xl font-semibold text-amber-400">
             {tasks.filter((t) => t.due_date && isPast(new Date(t.due_date))).length}
           </p>
         </Card>
       </div>
+
+      <TeamAttendancePanel active={activeShifts} recent={recentShifts} />
 
       <section className="space-y-4">
         <h2 className="text-lg font-semibold">Employee workload</h2>

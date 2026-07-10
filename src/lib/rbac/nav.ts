@@ -1,5 +1,5 @@
 import type { UserRole } from "@/types";
-import { hasPermission } from "@/lib/rbac/permissions";
+import { hasAnyRole, hasPermission } from "@/lib/rbac/permissions";
 
 export function isTelecallerFocused(roles: UserRole[]): boolean {
   return (
@@ -52,7 +52,7 @@ export function canSeeGlobalNav(
     return item === "chat";
   }
   if (item === "team") {
-    return hasPermission(roles, "MANAGE_ALL_COMPANIES");
+    return hasAnyRole(roles, ["god_mode", "admin", "manager"]);
   }
   if (item === "admin") {
     return hasPermission(roles, "MANAGE_USERS");
