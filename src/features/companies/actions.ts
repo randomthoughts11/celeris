@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth/session";
-import { canManageCompanies, requireCompanyAccess } from "@/lib/auth/access";
+import { canCreateCompanies, canManageCompanies, requireCompanyAccess } from "@/lib/auth/access";
 import {
   archiveCompany,
   createCompany,
@@ -25,7 +25,7 @@ import {
 
 export async function createCompanyAction(formData: FormData) {
   const user = await requireAuth();
-  if (!canManageCompanies(user)) {
+  if (!canCreateCompanies(user)) {
     return { error: "You do not have permission to create companies" };
   }
 

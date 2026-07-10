@@ -53,6 +53,10 @@ export function canManageCompanies(user: SessionUser): boolean {
   return hasPermission(user.roles, "MANAGE_ALL_COMPANIES");
 }
 
+export function canCreateCompanies(user: SessionUser): boolean {
+  return hasPermission(user.roles, "CREATE_COMPANY");
+}
+
 export function shouldScopeLeadsToOwner(roles: UserRole[]): boolean {
   return (
     hasRole(roles, "telecaller") &&

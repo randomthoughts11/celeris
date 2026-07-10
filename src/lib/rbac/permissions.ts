@@ -15,6 +15,7 @@ export const PERMISSIONS = {
   VIEW_AUDIT_LOGS: ["god_mode", "admin"] as UserRole[],
   IMPERSONATE: ["god_mode"] as UserRole[],
   MANAGE_ALL_COMPANIES: ["god_mode", "admin"] as UserRole[],
+  CREATE_COMPANY: ["god_mode", "admin", "manager"] as UserRole[],
   ACCESS_LEADS: ["god_mode", "manager", "admin", "telecaller"] as UserRole[],
   LOG_CALLS: ["god_mode", "manager", "admin", "telecaller"] as UserRole[],
   MANAGE_OWN_LEADS: ["telecaller"] as UserRole[],

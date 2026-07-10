@@ -48,7 +48,8 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
   const [googleName, setGoogleName] = useState("");
   const [metaId, setMetaId] = useState("");
   const [metaName, setMetaName] = useState("");
-  const canManage = hasPermission(user.roles, "MANAGE_ALL_COMPANIES");
+  const canCreate = hasPermission(user.roles, "CREATE_COMPANY");
+  const canArchive = hasPermission(user.roles, "MANAGE_ALL_COMPANIES");
 
   const loadAccounts = async () => {
     const data = await fetchAdAccountsAction();
@@ -101,7 +102,7 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
             {companies.length} active {companies.length === 1 ? "client" : "clients"}
           </p>
         </div>
-        {canManage && (
+        {canCreate && (
           <Dialog
             open={open}
             onOpenChange={(v) => {
@@ -211,12 +212,12 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
         )}
       </div>
 
-      {canManage && <AgencyCommandCenter tasks={agencyTasks} />}
+      {(canCreate || canArchive) && <AgencyCommandCenter tasks={agencyTasks} />}
 
       {companies.length === 0 ? (
         <div className="rounded-xl border border-dashed border-white/10 py-16 text-center">
           <p className="text-muted-foreground">No companies yet.</p>
-          {canManage && (
+          {canCreate && (
             <p className="mt-2 text-sm text-muted-foreground">
               Click &quot;Add company&quot; to create your first brand.
             </p>
@@ -227,7 +228,7 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
           {companies.map((company, index) => (
             <div key={company.id} className="relative group">
               <CompanyCard company={company} index={index} />
-              {canManage && (
+              {canArchive && (
                 <Button
                   variant="ghost"
                   size="icon"
