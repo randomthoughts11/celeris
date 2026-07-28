@@ -165,6 +165,81 @@ export interface Task {
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+  board_id?: string | null;
+  stack_id?: string | null;
+  position?: number;
+}
+
+export interface DeckBoard {
+  id: string;
+  company_id: string;
+  title: string;
+  color: string;
+  archived: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeckStack {
+  id: string;
+  board_id: string;
+  title: string;
+  position: number;
+  status_map: TaskStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeckLabel {
+  id: string;
+  board_id: string;
+  title: string;
+  color: string;
+}
+
+export interface DeckCard extends Task {
+  assignee_name: string | null;
+  time_logged_minutes: number;
+  comment_count: number;
+  labels: DeckLabel[];
+}
+
+export interface DeckComment {
+  id: string;
+  task_id: string;
+  user_id: string;
+  user_name: string;
+  content: string;
+  created_at: string;
+}
+
+export type VaultCategory =
+  | "social"
+  | "ads"
+  | "email"
+  | "hosting"
+  | "domain"
+  | "tools"
+  | "banking"
+  | "other";
+
+/** Vault entry as sent to the client — never includes the password. */
+export interface VaultEntry {
+  id: string;
+  company_id: string | null;
+  company_name: string | null;
+  created_by: string | null;
+  created_by_name: string | null;
+  title: string;
+  category: VaultCategory;
+  username: string | null;
+  url: string | null;
+  notes: string | null;
+  shared_with: Array<{ id: string; name: string }>;
+  can_manage: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Notification {

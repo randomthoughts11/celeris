@@ -1,0 +1,37 @@
+Celeris CRM — Build Log
+=======================
+
+2026-07-28 — Password vault
+---------------------------
+- New Vault page (/vault) in global nav for storing agency and brand credentials.
+- Passwords encrypted at rest (AES-256-GCM, keyed by AUTH_SECRET) and never sent
+  to the browser in lists; decrypted server-side only on reveal/copy.
+- Per-credential sharing: creator (or admin) picks which teammates can access.
+  Admins and god_mode see everything. Telecallers see only what is shared.
+- Every password reveal is audit-logged and appears in the activity feed.
+- Entries support category, company/brand tag, username, URL, notes, and a
+  strong-password generator. Search and category filters included.
+- DB: migration 009 (vault_credentials, vault_credential_access) — applied.
+
+2026-07-13 — Deck-style Kanban board (replaces Tasks)
+-----------------------------------------------------
+- Company Tasks page rebuilt as a Trello/Nextcloud-Deck-style board at
+  /companies/{slug}/tasks (nav renamed to "Board").
+- Multiple boards per company with switcher, create/rename/archive.
+- Custom lists (stacks) with add/rename/delete; each list maps to a task status
+  so dashboards and team workload stats keep working unchanged.
+- Drag-and-drop cards between/within lists (@dnd-kit) with optimistic updates.
+- Card detail dialog: description, type, priority, due date, assignee, labels
+  (board-scoped with colors), comments (wires up task_comments table), time
+  logging, delete.
+- DB: migration 008 (deck_boards, deck_stacks, deck_labels, deck_card_labels;
+  board/stack/position columns on tasks) — applied; existing tasks auto-placed
+  into a default "Main Board" per company.
+
+Known parked items
+------------------
+- Ads sync (Google/Meta): native sync has known bugs (MCC login-customer-id
+  header, missing date range, Meta spend double-count, wrong ROAS, silent
+  success toast). Looker embed path works as interim. Parked intentionally.
+- Pre-existing lint errors in chat-client.tsx and clock-widget.tsx
+  (set-state-in-effect), untouched.

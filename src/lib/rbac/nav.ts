@@ -46,10 +46,10 @@ export function canSeeCompanyNavItem(
 
 export function canSeeGlobalNav(
   roles: UserRole[],
-  item: "chat" | "settings" | "admin" | "team"
+  item: "chat" | "settings" | "admin" | "team" | "vault"
 ): boolean {
   if (isTelecallerFocused(roles)) {
-    return item === "chat";
+    return item === "chat" || item === "vault";
   }
   if (item === "team") {
     return hasAnyRole(roles, ["god_mode", "admin", "manager"]);

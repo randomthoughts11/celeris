@@ -8,8 +8,9 @@ import {
   BarChart3,
   Building2,
   Calendar,
-  CheckSquare,
   HardDrive,
+  Kanban,
+  KeyRound,
   LayoutDashboard,
   Megaphone,
   MessageSquare,
@@ -39,7 +40,7 @@ const companyNav = [
   { key: "scheduler" as const, href: "/scheduler", label: "Publishing", icon: Calendar },
   { key: "drive" as const, href: "/drive", label: "Drive", icon: HardDrive },
   { key: "leads" as const, href: "/leads", label: "Leads", icon: Building2 },
-  { key: "tasks" as const, href: "/tasks", label: "Tasks", icon: CheckSquare },
+  { key: "tasks" as const, href: "/tasks", label: "Board", icon: Kanban },
   { key: "calls" as const, href: "/ringcentral", label: "Call log", icon: Phone },
   { key: "analytics" as const, href: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
@@ -72,6 +73,7 @@ export function AppShell({ user, children }: AppShellProps) {
 
   const globalNav = [
     { key: "chat" as const, href: "/chat", label: "Chat", icon: MessageSquare },
+    { key: "vault" as const, href: "/vault", label: "Vault", icon: KeyRound },
     ...(showTeam
       ? [{ key: "team" as const, href: "/team", label: "Team", icon: Users }]
       : []),

@@ -3,9 +3,17 @@ import { Card } from "@/components/ui/card";
 import type { AuditLogEntry } from "@/lib/db/audit";
 
 const actionLabels: Record<string, string> = {
-  "task.created": "created a task",
-  "task.status_changed": "updated task status",
-  "task.time_logged": "logged time on a task",
+  "task.created": "created a card",
+  "task.status_changed": "moved a card",
+  "task.deleted": "deleted a card",
+  "task.time_logged": "logged time on a card",
+  "board.created": "created a board",
+  "board.archived": "archived a board",
+  "vault.created": "added a vault credential",
+  "vault.updated": "updated a vault credential",
+  "vault.deleted": "deleted a vault credential",
+  "vault.shared": "changed vault sharing",
+  "vault.revealed": "viewed a vault password",
   "shift.clock_in": "clocked in",
   "shift.clock_out": "clocked out",
   "lead.created": "added a lead",
