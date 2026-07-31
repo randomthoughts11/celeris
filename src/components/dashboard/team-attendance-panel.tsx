@@ -68,7 +68,7 @@ export function TeamAttendancePanel({ active, recent }: TeamAttendancePanelProps
                 <div>
                   <p className="font-medium">{shift.user_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    In since {format(new Date(shift.clock_in_at), "h:mm a")}
+                    Login {format(new Date(shift.clock_in_at), "MMM d, h:mm a")}
                   </p>
                 </div>
                 <GpsLink
@@ -92,10 +92,10 @@ export function TeamAttendancePanel({ active, recent }: TeamAttendancePanelProps
               <div className="min-w-[140px]">
                 <p className="font-medium">{shift.user_name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(shift.clock_in_at), "MMM d, h:mm a")}
+                  Login {format(new Date(shift.clock_in_at), "MMM d, h:mm a")}
                   {shift.clock_out_at
-                    ? ` – ${format(new Date(shift.clock_out_at), "h:mm a")}`
-                    : ""}
+                    ? ` · Logout ${format(new Date(shift.clock_out_at), "h:mm a")}`
+                    : " · Still on shift"}
                 </p>
               </div>
               <div className="flex items-center gap-2">

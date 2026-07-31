@@ -56,6 +56,7 @@ function mapCard(row: Record<string, unknown>): DeckCard {
     assignee_name: (row.assignee_name as string) ?? null,
     time_logged_minutes: Number(row.time_logged_minutes ?? 0),
     comment_count: Number(row.comment_count ?? 0),
+    attachment_count: Number(row.attachment_count ?? 0),
     labels: Array.isArray(row.labels) ? (row.labels as DeckLabel[]) : [],
   };
 }
@@ -118,6 +119,9 @@ export async function fetchBoardCards(boardId: string): Promise<DeckCard[]> {
       COALESCE(
         (SELECT COUNT(*)::int FROM task_comments WHERE task_id = t.id), 0
       ) AS comment_count,
+      COALESCE(
+        (SELECT COUNT(*)::int FROM task_attachments WHERE task_id = t.id), 0
+      ) AS attachment_count,
       COALESCE(
         (
           SELECT json_agg(json_build_object(

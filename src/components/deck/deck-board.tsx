@@ -132,6 +132,12 @@ export function DeckBoardView({
     setColumns(groupCards(stacks, cards));
   }
 
+  const stackStatus = useMemo(() => {
+    const map = new Map<string, DeckStack["status_map"]>();
+    for (const s of stacks) map.set(s.id, s.status_map);
+    return map;
+  }, [stacks]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
@@ -150,6 +156,39 @@ export function DeckBoardView({
     return null;
   };
 
+  const applyMoveLocally = (
+    prev: Record<string, DeckCard[]>,
+    activeId: string,
+    from: string,
+    to: string,
+    overId: string
+  ): Record<string, DeckCard[]> => {
+    const next = { ...prev };
+    const moving =
+      next[from]?.find((c) => c.id === activeId) ?? cardById.get(activeId);
+    if (!moving) return prev;
+
+    const fromList = next[from].filter((c) => c.id !== activeId);
+    const toList = (
+      from === to ? fromList : (next[to] ?? []).filter((c) => c.id !== activeId)
+    ).slice();
+    const overIndex = toList.findIndex((c) => c.id === overId);
+    const insertAt = overIndex >= 0 ? overIndex : toList.length;
+    const status = stackStatus.get(to) ?? moving.status;
+    toList.splice(insertAt, 0, {
+      ...moving,
+      stack_id: to,
+      status,
+      completed_at:
+        status === "done"
+          ? moving.completed_at ?? new Date().toISOString()
+          : null,
+    });
+    next[from] = from === to ? toList : fromList;
+    next[to] = toList;
+    return next;
+  };
+
   const onDragStart = (event: DragStartEvent) => {
     setActiveCard(cardById.get(String(event.active.id)) ?? null);
   };
@@ -162,17 +201,7 @@ export function DeckBoardView({
     const from = findStackOf(activeId);
     const to = findStackOf(overId);
     if (!from || !to || from === to) return;
-
-    setColumns((prev) => {
-      const fromList = prev[from].filter((c) => c.id !== activeId);
-      const moving = prev[from].find((c) => c.id === activeId);
-      if (!moving) return prev;
-      const toList = [...prev[to]];
-      const overIndex = toList.findIndex((c) => c.id === overId);
-      const insertAt = overIndex >= 0 ? overIndex : toList.length;
-      toList.splice(insertAt, 0, { ...moving, stack_id: to });
-      return { ...prev, [from]: fromList, [to]: toList };
-    });
+    setColumns((prev) => applyMoveLocally(prev, activeId, from, to, overId));
   };
 
   const onDragEnd = (event: DragEndEvent) => {
@@ -187,19 +216,8 @@ export function DeckBoardView({
 
     let finalColumns: Record<string, DeckCard[]> | null = null;
     setColumns((prev) => {
-      const next = { ...prev };
-      const fromList = next[from].filter((c) => c.id !== activeId);
-      const moving =
-        next[from].find((c) => c.id === activeId) ?? cardById.get(activeId);
-      if (!moving) return prev;
-      const toList = (from === to ? fromList : next[to].filter((c) => c.id !== activeId)).slice();
-      const overIndex = toList.findIndex((c) => c.id === overId);
-      const insertAt = overIndex >= 0 ? overIndex : toList.length;
-      toList.splice(insertAt, 0, { ...moving, stack_id: to });
-      next[from] = from === to ? toList : fromList;
-      next[to] = toList;
-      finalColumns = next;
-      return next;
+      finalColumns = applyMoveLocally(prev, activeId, from, to, overId);
+      return finalColumns;
     });
 
     const index = finalColumns
@@ -217,6 +235,7 @@ export function DeckBoardView({
       );
       if (result?.error) {
         toast.error(result.error);
+        setColumns(groupCards(stacks, cards));
       }
       router.refresh();
     });

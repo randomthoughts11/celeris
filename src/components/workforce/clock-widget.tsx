@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { Clock, LogIn, LogOut, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
   clockInAction,
   clockOutAction,
   getMyShiftAction,
+  getMyShiftHistoryAction,
 } from "@/features/workforce/actions";
 import type { WorkShift } from "@/lib/db/work-shifts";
 import { cn } from "@/lib/utils";
@@ -44,29 +45,45 @@ function getGps(): Promise<{
   });
 }
 
+function shiftDuration(shift: WorkShift) {
+  const start = new Date(shift.clock_in_at);
+  const end = shift.clock_out_at ? new Date(shift.clock_out_at) : new Date();
+  const mins = Math.round((end.getTime() - start.getTime()) / 60_000);
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 export function ClockWidget() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [shift, setShift] = useState<WorkShift | null>(null);
+  const [history, setHistory] = useState<WorkShift[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tick, setTick] = useState(0);
 
   const refresh = useCallback(async () => {
-    const active = await getMyShiftAction();
+    const [active, recent] = await Promise.all([
+      getMyShiftAction(),
+      getMyShiftHistoryAction(),
+    ]);
     setShift(active);
+    setHistory(recent);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (!open) return;
+    void refresh();
+  }, [open, refresh]);
 
+  // Keep header button state in sync without waiting for dialog open.
   useEffect(() => {
-    if (!shift) return;
-    const id = setInterval(() => setTick((t) => t + 1), 60_000);
-    return () => clearInterval(id);
-  }, [shift, tick]);
+    void getMyShiftAction().then((active) => {
+      setShift(active);
+      setLoading(false);
+    });
+  }, []);
 
   const clockIn = () => {
     startTransition(async () => {
@@ -77,6 +94,7 @@ export function ClockWidget() {
         else {
           toast.success("Clocked in");
           setShift(result.shift ?? null);
+          await refresh();
           router.refresh();
         }
       } catch (e) {
@@ -94,6 +112,7 @@ export function ClockWidget() {
         else {
           toast.success("Clocked out");
           setShift(null);
+          await refresh();
           router.refresh();
         }
       } catch (e) {
@@ -117,7 +136,11 @@ export function ClockWidget() {
             )}
           >
             <Clock className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{isIn ? "On shift" : "Clock"}</span>
+            <span className="hidden sm:inline">
+              {isIn && shift
+                ? `In ${format(new Date(shift.clock_in_at), "h:mm a")}`
+                : "Clock"}
+            </span>
           </Button>
         }
       />
@@ -127,7 +150,8 @@ export function ClockWidget() {
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-xs text-muted-foreground">
-            GPS is recorded when you clock in and out. Allow location access in your browser.
+            GPS is recorded when you clock in and out. Allow location access in
+            your browser.
           </p>
 
           {loading ? (
@@ -135,20 +159,25 @@ export function ClockWidget() {
           ) : isIn && shift ? (
             <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm">
               <p className="font-medium text-emerald-300">Currently clocked in</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Since {formatDistanceToNow(new Date(shift.clock_in_at), { addSuffix: true })}
+              <p className="mt-2 text-sm">
+                <span className="text-muted-foreground">Login: </span>
+                {format(new Date(shift.clock_in_at), "EEE, MMM d · h:mm a")}
               </p>
-              {shift.clock_in_latitude != null && shift.clock_in_longitude != null && (
-                <a
-                  href={`https://maps.google.com/?q=${shift.clock_in_latitude},${shift.clock_in_longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 flex items-center gap-1 text-xs text-violet-400 hover:underline"
-                >
-                  <MapPin className="h-3 w-3" />
-                  View clock-in location
-                </a>
-              )}
+              <p className="mt-1 text-xs text-muted-foreground">
+                Duration so far: {shiftDuration(shift)}
+              </p>
+              {shift.clock_in_latitude != null &&
+                shift.clock_in_longitude != null && (
+                  <a
+                    href={`https://maps.google.com/?q=${shift.clock_in_latitude},${shift.clock_in_longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 flex items-center gap-1 text-xs text-violet-400 hover:underline"
+                  >
+                    <MapPin className="h-3 w-3" />
+                    View clock-in location
+                  </a>
+                )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">You are off the clock.</p>
@@ -176,6 +205,43 @@ export function ClockWidget() {
                 <LogOut className="h-3.5 w-3.5" />
                 Clock out
               </Button>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              Your recent login / logout
+            </p>
+            {history.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No shifts yet.</p>
+            ) : (
+              <ul className="max-h-48 space-y-2 overflow-y-auto">
+                {history.map((s) => (
+                  <li
+                    key={s.id}
+                    className="rounded-md border border-white/5 bg-white/[0.02] px-3 py-2 text-xs"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span>
+                        {format(new Date(s.clock_in_at), "MMM d, yyyy")}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {shiftDuration(s)}
+                      </span>
+                    </div>
+                    <p className="mt-1">
+                      <span className="text-muted-foreground">Login: </span>
+                      {format(new Date(s.clock_in_at), "h:mm a")}
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">Logout: </span>
+                      {s.clock_out_at
+                        ? format(new Date(s.clock_out_at), "h:mm a")
+                        : "Still on shift"}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>

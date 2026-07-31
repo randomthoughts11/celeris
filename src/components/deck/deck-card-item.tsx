@@ -4,13 +4,23 @@ import { useEffect, useRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { format, isPast } from "date-fns";
-import { AlarmClock, MessageSquare, Timer } from "lucide-react";
+import { AlarmClock, MessageSquare, Paperclip, Timer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import type { DeckCard, DeckLabel } from "@/types";
+import type { DeckCard, DeckLabel, TaskStatus } from "@/types";
 import { cn } from "@/lib/utils";
 import { CardDetailDialog } from "./card-dialogs";
 import type { DeckMember } from "./deck-board";
+
+const STATUS_LABELS: Record<TaskStatus, string> = {
+  backlog: "Backlog",
+  todo: "To Do",
+  in_progress: "In Progress",
+  review: "Review",
+  blocked: "Blocked",
+  done: "Done",
+  cancelled: "Cancelled",
+};
 
 function isOverdue(card: DeckCard) {
   return Boolean(
@@ -22,25 +32,34 @@ function CardBody({ card }: { card: DeckCard }) {
   const overdue = isOverdue(card);
   return (
     <>
-      {card.labels.length > 0 && (
-        <div className="flex flex-wrap gap-1">
-          {card.labels.map((label) => (
-            <span
-              key={label.id}
-              className="rounded-full px-2 py-0.5 text-[10px] font-medium"
-              style={{
-                backgroundColor: `${label.color}26`,
-                color: label.color,
-              }}
-            >
-              {label.title}
-            </span>
-          ))}
-        </div>
-      )}
-      <p className={cn("font-medium", card.labels.length > 0 && "mt-2")}>
-        {card.title}
-      </p>
+      <div className="flex flex-wrap gap-1">
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-[10px]",
+            card.status === "done" && "border-emerald-500/40 text-emerald-300",
+            card.status === "in_progress" &&
+              "border-sky-500/40 text-sky-300",
+            card.status === "review" && "border-amber-500/40 text-amber-300",
+            card.status === "blocked" && "border-red-500/40 text-red-300"
+          )}
+        >
+          {STATUS_LABELS[card.status] ?? card.status}
+        </Badge>
+        {card.labels.map((label) => (
+          <span
+            key={label.id}
+            className="rounded-full px-2 py-0.5 text-[10px] font-medium"
+            style={{
+              backgroundColor: `${label.color}26`,
+              color: label.color,
+            }}
+          >
+            {label.title}
+          </span>
+        ))}
+      </div>
+      <p className="mt-2 font-medium">{card.title}</p>
       {card.description && (
         <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
           {card.description}
@@ -67,6 +86,12 @@ function CardBody({ card }: { card: DeckCard }) {
           <span className="flex items-center gap-1">
             <MessageSquare className="h-3 w-3" />
             {card.comment_count}
+          </span>
+        )}
+        {card.attachment_count > 0 && (
+          <span className="flex items-center gap-1">
+            <Paperclip className="h-3 w-3" />
+            {card.attachment_count}
           </span>
         )}
         {card.time_logged_minutes > 0 && (

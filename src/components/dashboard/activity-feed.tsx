@@ -14,6 +14,8 @@ const actionLabels: Record<string, string> = {
   "vault.deleted": "deleted a vault credential",
   "vault.shared": "changed vault sharing",
   "vault.revealed": "viewed a vault password",
+  "task.attachment_added": "uploaded a screenshot to a card",
+  "task.attachment_deleted": "removed a card screenshot",
   "shift.clock_in": "clocked in",
   "shift.clock_out": "clocked out",
   "lead.created": "added a lead",

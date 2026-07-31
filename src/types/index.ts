@@ -202,6 +202,7 @@ export interface DeckCard extends Task {
   assignee_name: string | null;
   time_logged_minutes: number;
   comment_count: number;
+  attachment_count: number;
   labels: DeckLabel[];
 }
 

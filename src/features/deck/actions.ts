@@ -7,7 +7,11 @@ import { logAudit } from "@/lib/db/audit";
 import { getSql } from "@/lib/db/client";
 import type { TaskPriority, TaskStatus, TaskType } from "@/types";
 
-const revalidate = () => revalidatePath("/companies");
+const revalidate = () => {
+  // Invalidate the whole app tree so board pages under /companies/[slug]/tasks
+  // pick up stack/status changes (path-only /companies is not enough).
+  revalidatePath("/", "layout");
+};
 
 // ---------- Boards ----------
 
@@ -239,10 +243,11 @@ export async function moveCardAction(
   const sql = getSql();
 
   const stack = await sql`
-    SELECT status_map FROM deck_stacks WHERE id = ${toStackId}
+    SELECT board_id, status_map FROM deck_stacks WHERE id = ${toStackId}
   `;
   if (!stack[0]) return { error: "List not found" };
   const status = stack[0].status_map as TaskStatus;
+  const boardId = stack[0].board_id as string;
   const completedAt = status === "done" ? new Date().toISOString() : null;
 
   const existing = await sql`
@@ -256,6 +261,7 @@ export async function moveCardAction(
 
   await sql`
     UPDATE tasks SET
+      board_id = ${boardId},
       stack_id = ${toStackId},
       status = ${status},
       completed_at = ${completedAt},
@@ -275,7 +281,7 @@ export async function moveCardAction(
     newValues: { status, stackId: toStackId },
   });
   revalidate();
-  return { success: true };
+  return { success: true, status };
 }
 
 export async function deleteCardAction(companyId: string, cardId: string) {
@@ -380,4 +386,90 @@ export async function fetchCommentsAction(companyId: string, cardId: string) {
   await requireCompanyAccess(user, companyId);
   const { fetchCardComments } = await import("@/lib/db/deck");
   return fetchCardComments(cardId);
+}
+
+// ---------- Attachments (screenshots / proof of work) ----------
+
+const MAX_ATTACHMENT_BYTES = 4 * 1024 * 1024; // 4 MB
+const ALLOWED_MIME = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/gif",
+]);
+
+export async function uploadCardAttachmentAction(
+  companyId: string,
+  cardId: string,
+  formData: FormData
+) {
+  const user = await requireAuth();
+  await requireCompanyAccess(user, companyId);
+
+  const file = formData.get("file");
+  if (!(file instanceof File)) return { error: "No file selected" };
+  if (!ALLOWED_MIME.has(file.type)) {
+    return { error: "Only PNG, JPG, WEBP, or GIF screenshots are allowed" };
+  }
+  if (file.size <= 0 || file.size > MAX_ATTACHMENT_BYTES) {
+    return { error: "Screenshot must be under 4 MB" };
+  }
+
+  const sql = getSql();
+  const owned = await sql`
+    SELECT id FROM tasks WHERE id = ${cardId} AND company_id = ${companyId}
+  `;
+  if (!owned[0]) return { error: "Card not found" };
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const { insertTaskAttachment } = await import("@/lib/db/attachments");
+  const id = await insertTaskAttachment({
+    taskId: cardId,
+    companyId,
+    uploadedBy: user.id,
+    fileName: file.name || "screenshot.png",
+    mimeType: file.type,
+    sizeBytes: file.size,
+    dataBase64: buffer.toString("base64"),
+  });
+
+  await logAudit({
+    userId: user.id,
+    companyId,
+    action: "task.attachment_added",
+    resourceType: "task",
+    resourceId: cardId,
+    newValues: { attachmentId: id, fileName: file.name },
+  });
+  revalidate();
+  return { success: true, attachmentId: id };
+}
+
+export async function fetchAttachmentsAction(companyId: string, cardId: string) {
+  const user = await requireAuth();
+  await requireCompanyAccess(user, companyId);
+  const { fetchTaskAttachments } = await import("@/lib/db/attachments");
+  return fetchTaskAttachments(cardId);
+}
+
+export async function deleteCardAttachmentAction(
+  companyId: string,
+  attachmentId: string
+) {
+  const user = await requireAuth();
+  await requireCompanyAccess(user, companyId);
+  const { deleteTaskAttachment } = await import("@/lib/db/attachments");
+  const ok = await deleteTaskAttachment(attachmentId, companyId);
+  if (!ok) return { error: "Attachment not found" };
+
+  await logAudit({
+    userId: user.id,
+    companyId,
+    action: "task.attachment_deleted",
+    resourceType: "task_attachment",
+    resourceId: attachmentId,
+  });
+  revalidate();
+  return { success: true };
 }

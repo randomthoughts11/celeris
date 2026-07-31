@@ -180,11 +180,26 @@ export async function logTaskTime(input: {
   `;
 }
 
-export async function getTaskTimeTotal(taskId: string): Promise<number> {
+export async function fetchCompletedTaskCount(
+  accessibleIds: string[] | "all"
+): Promise<number> {
   const sql = getSql();
-  const rows = await sql`
-    SELECT COALESCE(SUM(minutes), 0)::int AS total
-    FROM task_time_logs WHERE task_id = ${taskId}
-  `;
-  return Number(rows[0]?.total ?? 0);
+  const rows =
+    accessibleIds === "all"
+      ? await sql`
+          SELECT COUNT(*)::int AS n
+          FROM tasks t
+          JOIN companies c ON c.id = t.company_id AND c.is_active = true
+          WHERE t.status = 'done'
+        `
+      : accessibleIds.length === 0
+        ? [{ n: 0 }]
+        : await sql`
+            SELECT COUNT(*)::int AS n
+            FROM tasks t
+            JOIN companies c ON c.id = t.company_id AND c.is_active = true
+            WHERE t.company_id = ANY(${accessibleIds}::uuid[])
+              AND t.status = 'done'
+          `;
+  return Number(rows[0]?.n ?? 0);
 }

@@ -1,6 +1,30 @@
 Celeris CRM — Build Log
 =======================
 
+2026-07-31 — Clickable open / overdue task counts
+-------------------------------------------------
+- Team dashboard Open tasks and Overdue summary cards are clickable: they
+  filter the task list and scroll to it so managers can see which work is
+  pending or late. Each task links to that brand’s board.
+
+2026-07-31 — Screenshots + simpler task types
+---------------------------------------------
+- Card type defaults to General; Social/Publishing and Ads/Campaign are optional
+  specialty types (not forced on every task). Create form explains this.
+- Screenshot upload on card details (PNG/JPG/WEBP/GIF, up to 4 MB) for proof of
+  work. Attachments stored in Neon; paperclip count shown on board cards.
+- DB: migration 010 (task_attachments) — applied.
+
+2026-07-31 — Board status, completed counts, clock times
+--------------------------------------------------------
+- Fix Kanban move: revalidate full app layout so cards stay in the new list
+  after drag; optimistic UI now updates card status from the target list;
+  cards show a status badge (To Do / In Progress / Done / …) that changes
+  when moved.
+- Board page and Team dashboard now show total completed tasks (not just open).
+- Clock widget shows exact login time in the header when on shift, and a
+  recent login/logout history with times. Team attendance labels clarified.
+
 2026-07-28 — Password vault
 ---------------------------
 - New Vault page (/vault) in global nav for storing agency and brand credentials.

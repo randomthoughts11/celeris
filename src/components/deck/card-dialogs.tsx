@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Check, Plus, Send, Trash2 } from "lucide-react";
+import { Check, ImagePlus, Plus, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,25 +29,30 @@ import {
   addCommentAction,
   createCardAction,
   deleteCardAction,
+  deleteCardAttachmentAction,
+  fetchAttachmentsAction,
   fetchCommentsAction,
   toggleCardLabelAction,
   updateCardAction,
+  uploadCardAttachmentAction,
 } from "@/features/deck/actions";
 import type { DeckCard, DeckComment, DeckLabel } from "@/types";
+import type { TaskAttachment } from "@/lib/db/attachments";
 import { cn } from "@/lib/utils";
 import type { DeckMember } from "./deck-board";
 
+/** General work types first — social/ads types are optional, not the default. */
 const typeLabels: Record<string, string> = {
+  other: "General",
   design: "Design",
+  development: "Development",
+  meeting: "Meeting",
+  support: "Support",
   copywriting: "Copywriting",
   approval: "Approval",
-  publishing: "Publishing",
-  meeting: "Meeting",
-  campaign_launch: "Campaign Launch",
   seo: "SEO",
-  development: "Development",
-  support: "Support",
-  other: "Other",
+  publishing: "Social / Publishing",
+  campaign_launch: "Ads / Campaign",
 };
 
 export function CreateCardDialog({
@@ -113,7 +118,7 @@ export function CreateCardDialog({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Type</Label>
+              <Label>Type (optional)</Label>
               <Select
                 value={taskType}
                 onValueChange={(v) => setTaskType(v ?? "other")}
@@ -129,6 +134,10 @@ export function CreateCardDialog({
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Defaults to General. Social / Ads types are only for that kind of
+                work — not required on every card.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Priority</Label>
@@ -205,6 +214,9 @@ export function CardDetailDialog({
   const [priority, setPriority] = useState<string>(card.priority);
   const [assigneeId, setAssigneeId] = useState(card.assignee_id ?? "");
   const [comments, setComments] = useState<DeckComment[] | null>(null);
+  const [attachments, setAttachments] = useState<TaskAttachment[] | null>(
+    null
+  );
   const [comment, setComment] = useState("");
 
   // Reset the form each time the dialog opens with the card's latest values.
@@ -216,18 +228,26 @@ export function CardDetailDialog({
       setPriority(card.priority);
       setAssigneeId(card.assignee_id ?? "");
       setComments(null);
+      setAttachments(null);
     }
   }
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    fetchCommentsAction(companyId, card.id)
-      .then((result) => {
-        if (!cancelled) setComments(result);
+    Promise.all([
+      fetchCommentsAction(companyId, card.id),
+      fetchAttachmentsAction(companyId, card.id),
+    ])
+      .then(([nextComments, nextAttachments]) => {
+        if (cancelled) return;
+        setComments(nextComments);
+        setAttachments(nextAttachments);
       })
       .catch(() => {
-        if (!cancelled) setComments([]);
+        if (cancelled) return;
+        setComments([]);
+        setAttachments([]);
       });
     return () => {
       cancelled = true;
@@ -267,6 +287,40 @@ export function CardDetailDialog({
         setComment("");
         const updated = await fetchCommentsAction(companyId, card.id);
         setComments(updated);
+        router.refresh();
+      }
+    });
+  };
+
+  const uploadScreenshot = (fileList: FileList | null) => {
+    const file = fileList?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.set("file", file);
+    startTransition(async () => {
+      const result = await uploadCardAttachmentAction(
+        companyId,
+        card.id,
+        formData
+      );
+      if (result.error) toast.error(result.error);
+      else {
+        toast.success("Screenshot uploaded");
+        const updated = await fetchAttachmentsAction(companyId, card.id);
+        setAttachments(updated);
+        router.refresh();
+      }
+    });
+  };
+
+  const removeAttachment = (attachmentId: string) => {
+    startTransition(async () => {
+      const result = await deleteCardAttachmentAction(companyId, attachmentId);
+      if (result.error) toast.error(result.error);
+      else {
+        setAttachments((prev) =>
+          prev ? prev.filter((a) => a.id !== attachmentId) : prev
+        );
         router.refresh();
       }
     });
@@ -314,7 +368,7 @@ export function CardDetailDialog({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Type</Label>
+              <Label>Type (optional)</Label>
               <Select
                 value={taskType}
                 onValueChange={(v) => setTaskType((v ?? "other") as never)}
@@ -444,6 +498,70 @@ export function CardDetailDialog({
             </Button>
           </div>
         </form>
+
+        <Separator />
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium">Screenshots</p>
+              <p className="text-xs text-muted-foreground">
+                Proof of work — posts, ads, deliverables, etc.
+              </p>
+            </div>
+            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm transition-colors hover:bg-white/5">
+              <ImagePlus className="h-3.5 w-3.5" />
+              Upload
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                className="sr-only"
+                disabled={pending}
+                onChange={(e) => {
+                  uploadScreenshot(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
+          {attachments === null ? (
+            <p className="text-xs text-muted-foreground">Loading…</p>
+          ) : attachments.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No screenshots yet. Upload one when the work is done.
+            </p>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              {attachments.map((file) => (
+                <div
+                  key={file.id}
+                  className="group relative overflow-hidden rounded-md border border-white/10 bg-black/20"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={file.data_url}
+                    alt={file.file_name}
+                    className="aspect-video w-full object-cover"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-black/70 px-2 py-1">
+                    <span className="truncate text-[10px] text-white/80">
+                      {file.file_name}
+                    </span>
+                    <button
+                      type="button"
+                      className="text-red-300 hover:text-red-200"
+                      disabled={pending}
+                      onClick={() => removeAttachment(file.id)}
+                      title="Remove"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <Separator />
 
