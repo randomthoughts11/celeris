@@ -3,6 +3,7 @@ import type { Task, TaskStatus } from "@/types";
 
 export interface TaskWithAssignee extends Task {
   assignee_name: string | null;
+  created_by_name: string | null;
   company_name: string;
   company_slug: string;
   time_logged_minutes?: number;
@@ -15,6 +16,7 @@ export async function fetchTasksWithAssignees(
   const rows = await sql`
     SELECT t.*,
       p.full_name AS assignee_name,
+      creator.full_name AS created_by_name,
       c.name AS company_name,
       c.slug AS company_slug,
       COALESCE(
@@ -24,6 +26,7 @@ export async function fetchTasksWithAssignees(
     FROM tasks t
     JOIN companies c ON c.id = t.company_id
     LEFT JOIN profiles p ON p.id = t.assignee_id
+    LEFT JOIN profiles creator ON creator.id = t.created_by
     WHERE t.company_id = ${companyId}
     ORDER BY
       CASE WHEN t.status IN ('done', 'cancelled') THEN 1 ELSE 0 END,
@@ -43,11 +46,13 @@ export async function fetchAgencyTasks(
       ? await sql`
           SELECT t.*,
             p.full_name AS assignee_name,
+            creator.full_name AS created_by_name,
             c.name AS company_name,
             c.slug AS company_slug
           FROM tasks t
           JOIN companies c ON c.id = t.company_id AND c.is_active = true
           LEFT JOIN profiles p ON p.id = t.assignee_id
+          LEFT JOIN profiles creator ON creator.id = t.created_by
           WHERE t.status NOT IN ('done', 'cancelled')
           ORDER BY t.due_date ASC NULLS LAST, t.priority DESC
         `
@@ -56,11 +61,13 @@ export async function fetchAgencyTasks(
         : await sql`
             SELECT t.*,
               p.full_name AS assignee_name,
+              creator.full_name AS created_by_name,
               c.name AS company_name,
               c.slug AS company_slug
             FROM tasks t
             JOIN companies c ON c.id = t.company_id AND c.is_active = true
             LEFT JOIN profiles p ON p.id = t.assignee_id
+            LEFT JOIN profiles creator ON creator.id = t.created_by
             WHERE t.company_id = ANY(${accessibleIds}::uuid[])
               AND t.status NOT IN ('done', 'cancelled')
             ORDER BY t.due_date ASC NULLS LAST, t.priority DESC
@@ -161,6 +168,7 @@ function mapTaskRow(row: Record<string, unknown>): TaskWithAssignee {
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
     assignee_name: (row.assignee_name as string) ?? null,
+    created_by_name: (row.created_by_name as string) ?? null,
     company_name: row.company_name as string,
     company_slug: row.company_slug as string,
     time_logged_minutes: Number(row.time_logged_minutes ?? 0),

@@ -131,8 +131,11 @@ export function TeamTaskStats({
                       <p className="font-medium">{task.title}</p>
                       <p className="text-sm text-muted-foreground">
                         {task.company_name}
+                        {task.created_by_name
+                          ? ` · Created by ${task.created_by_name}`
+                          : ""}
                         {task.assignee_name
-                          ? ` · ${task.assignee_name}`
+                          ? ` · Assigned to ${task.assignee_name}`
                           : " · Unassigned"}
                       </p>
                     </div>

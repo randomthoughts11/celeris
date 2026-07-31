@@ -60,6 +60,11 @@ function CardBody({ card }: { card: DeckCard }) {
         ))}
       </div>
       <p className="mt-2 font-medium">{card.title}</p>
+      {card.created_by_name && (
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Created by {card.created_by_name}
+        </p>
+      )}
       {card.description && (
         <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
           {card.description}
@@ -101,8 +106,8 @@ function CardBody({ card }: { card: DeckCard }) {
           </span>
         )}
         {card.assignee_name && (
-          <span className="ml-auto max-w-28 truncate">
-            {card.assignee_name}
+          <span className="ml-auto max-w-28 truncate" title="Assignee">
+            → {card.assignee_name}
           </span>
         )}
       </div>

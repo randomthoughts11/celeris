@@ -54,6 +54,7 @@ function mapCard(row: Record<string, unknown>): DeckCard {
     stack_id: (row.stack_id as string) ?? null,
     position: Number(row.position ?? 0),
     assignee_name: (row.assignee_name as string) ?? null,
+    created_by_name: (row.created_by_name as string) ?? null,
     time_logged_minutes: Number(row.time_logged_minutes ?? 0),
     comment_count: Number(row.comment_count ?? 0),
     attachment_count: Number(row.attachment_count ?? 0),
@@ -113,6 +114,7 @@ export async function fetchBoardCards(boardId: string): Promise<DeckCard[]> {
   const rows = await sql`
     SELECT t.*,
       p.full_name AS assignee_name,
+      creator.full_name AS created_by_name,
       COALESCE(
         (SELECT SUM(minutes)::int FROM task_time_logs WHERE task_id = t.id), 0
       ) AS time_logged_minutes,
@@ -135,6 +137,7 @@ export async function fetchBoardCards(boardId: string): Promise<DeckCard[]> {
       ) AS labels
     FROM tasks t
     LEFT JOIN profiles p ON p.id = t.assignee_id
+    LEFT JOIN profiles creator ON creator.id = t.created_by
     WHERE t.board_id = ${boardId}
     ORDER BY t.position ASC, t.created_at ASC
   `;

@@ -345,6 +345,14 @@ export function CardDetailDialog({
       >
         <DialogHeader>
           <DialogTitle>Card details</DialogTitle>
+          {card.created_by_name && (
+            <p className="text-xs text-muted-foreground">
+              Created by {card.created_by_name}
+              {card.created_at
+                ? ` · ${format(new Date(card.created_at), "MMM d, yyyy")}`
+                : ""}
+            </p>
+          )}
         </DialogHeader>
 
         <form onSubmit={save} className="space-y-4">
