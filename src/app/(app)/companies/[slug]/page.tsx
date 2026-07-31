@@ -87,7 +87,11 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
         showAdsNote={adsMetricsEmpty && Boolean(googleLookerUrl || metaLookerUrl)}
       />
 
-      <CompanyTasksPanel tasks={tasks} companySlug={slug} />
+      <CompanyTasksPanel
+        tasks={tasks}
+        companySlug={slug}
+        currentUserId={user.id}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard

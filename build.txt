@@ -1,6 +1,14 @@
 Celeris CRM — Build Log
 =======================
 
+2026-07-31 — My tasks / Team tasks filter
+----------------------------------------
+- Company Board defaults to My tasks (assigned to you, including completed in
+  the Done column); switch to Team tasks for full collaboration view.
+- Company overview task panel: My/Team + Open/Completed toggles so completed
+  work is easy to find.
+- Team dashboard: My tasks / Team tasks filter alongside Open / Overdue.
+
 2026-07-31 — Creator names + company list cleanup
 -------------------------------------------------
 - Board cards and Team task lists show “Created by …” so you can tell who

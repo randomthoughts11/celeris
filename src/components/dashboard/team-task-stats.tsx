@@ -9,6 +9,7 @@ import type { TaskWithAssignee } from "@/lib/db/tasks";
 import { cn } from "@/lib/utils";
 
 export type TeamTaskFilter = "open" | "overdue" | "all";
+export type TeamTaskScope = "mine" | "team";
 
 interface TeamTaskStatsProps {
   tasks: TaskWithAssignee[];
@@ -16,6 +17,8 @@ interface TeamTaskStatsProps {
   activeMembers: number;
   onClock: number;
   filter: TeamTaskFilter;
+  scope: TeamTaskScope;
+  currentUserId: string;
 }
 
 export function TeamTaskStats({
@@ -24,17 +27,29 @@ export function TeamTaskStats({
   activeMembers,
   onClock,
   filter,
+  scope,
+  currentUserId,
 }: TeamTaskStatsProps) {
   const router = useRouter();
-  const overdueTasks = tasks.filter(
+
+  const scopedTasks =
+    scope === "mine"
+      ? tasks.filter((t) => t.assignee_id === currentUserId)
+      : tasks;
+
+  const overdueTasks = scopedTasks.filter(
     (t) => t.due_date && isPast(new Date(t.due_date))
   );
-  const visible =
-    filter === "overdue" ? overdueTasks : filter === "open" || filter === "all" ? tasks : tasks;
+  const visible = filter === "overdue" ? overdueTasks : scopedTasks;
 
-  const setFilter = (next: TeamTaskFilter) => {
+  const pushState = (nextFilter: TeamTaskFilter, nextScope: TeamTaskScope) => {
     const params = new URLSearchParams();
-    if (next !== "all") params.set("filter", next);
+    if (nextFilter !== "all" && nextFilter !== "open") {
+      params.set("filter", nextFilter);
+    } else if (nextFilter === "open") {
+      params.set("filter", "open");
+    }
+    if (nextScope === "mine") params.set("scope", "mine");
     const qs = params.toString();
     router.push(qs ? `/team?${qs}` : "/team", { scroll: false });
     requestAnimationFrame(() => {
@@ -47,22 +62,24 @@ export function TeamTaskStats({
 
   const title =
     filter === "overdue"
-      ? `Overdue tasks (${overdueTasks.length})`
-      : `Open tasks (${tasks.length})`;
+      ? `${scope === "mine" ? "My overdue" : "Overdue"} tasks (${overdueTasks.length})`
+      : `${scope === "mine" ? "My open" : "Open"} tasks (${scopedTasks.length})`;
 
   return (
     <>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <button
           type="button"
-          onClick={() => setFilter("open")}
+          onClick={() => pushState("open", scope)}
           className={cn(
             "rounded-xl border border-white/5 bg-white/[0.03] p-5 text-left transition-colors hover:border-white/20 hover:bg-white/[0.05]",
             filter === "open" && "border-violet-500/40 bg-violet-500/10"
           )}
         >
-          <p className="text-sm text-muted-foreground">Open tasks</p>
-          <p className="text-3xl font-semibold">{tasks.length}</p>
+          <p className="text-sm text-muted-foreground">
+            {scope === "mine" ? "My open tasks" : "Open tasks"}
+          </p>
+          <p className="text-3xl font-semibold">{scopedTasks.length}</p>
           <p className="mt-1 text-[11px] text-muted-foreground">Click to view</p>
         </button>
 
@@ -85,13 +102,15 @@ export function TeamTaskStats({
 
         <button
           type="button"
-          onClick={() => setFilter("overdue")}
+          onClick={() => pushState("overdue", scope)}
           className={cn(
             "rounded-xl border border-white/5 bg-white/[0.03] p-5 text-left transition-colors hover:border-amber-500/40 hover:bg-amber-500/5",
             filter === "overdue" && "border-amber-500/50 bg-amber-500/10"
           )}
         >
-          <p className="text-sm text-muted-foreground">Overdue</p>
+          <p className="text-sm text-muted-foreground">
+            {scope === "mine" ? "My overdue" : "Overdue"}
+          </p>
           <p className="text-3xl font-semibold text-amber-400">
             {overdueTasks.length}
           </p>
@@ -102,17 +121,31 @@ export function TeamTaskStats({
       <section id="team-tasks" className="scroll-mt-24 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">{title}</h2>
-          <div className="flex gap-1">
-            <FilterChip
-              active={filter === "open" || filter === "all"}
-              onClick={() => setFilter("open")}
-              label="Open"
-            />
-            <FilterChip
-              active={filter === "overdue"}
-              onClick={() => setFilter("overdue")}
-              label="Overdue"
-            />
+          <div className="flex flex-wrap gap-2">
+            <div className="flex gap-1 rounded-full bg-white/5 p-0.5">
+              <FilterChip
+                active={scope === "mine"}
+                onClick={() => pushState(filter === "all" ? "open" : filter, "mine")}
+                label="My tasks"
+              />
+              <FilterChip
+                active={scope === "team"}
+                onClick={() => pushState(filter === "all" ? "open" : filter, "team")}
+                label="Team tasks"
+              />
+            </div>
+            <div className="flex gap-1">
+              <FilterChip
+                active={filter === "open" || filter === "all"}
+                onClick={() => pushState("open", scope)}
+                label="Open"
+              />
+              <FilterChip
+                active={filter === "overdue"}
+                onClick={() => pushState("overdue", scope)}
+                label="Overdue"
+              />
+            </div>
           </div>
         </div>
         <Card className="overflow-hidden border-white/5 bg-white/[0.02]">
@@ -166,8 +199,12 @@ export function TeamTaskStats({
             {visible.length === 0 && (
               <li className="p-8 text-center text-muted-foreground">
                 {filter === "overdue"
-                  ? "No overdue tasks — nice work."
-                  : "No open tasks."}
+                  ? scope === "mine"
+                    ? "You have no overdue tasks."
+                    : "No overdue tasks — nice work."
+                  : scope === "mine"
+                    ? "Nothing assigned to you right now."
+                    : "No open tasks."}
               </li>
             )}
           </ul>

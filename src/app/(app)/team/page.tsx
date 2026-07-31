@@ -4,6 +4,7 @@ import { TeamAttendancePanel } from "@/components/dashboard/team-attendance-pane
 import {
   TeamTaskStats,
   type TeamTaskFilter,
+  type TeamTaskScope,
 } from "@/components/dashboard/team-task-stats";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -19,7 +20,7 @@ import { fetchActiveShifts, fetchRecentShifts } from "@/lib/db/work-shifts";
 import { hasAnyRole } from "@/lib/rbac/permissions";
 
 interface PageProps {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; scope?: string }>;
 }
 
 export default async function TeamDashboardPage({ searchParams }: PageProps) {
@@ -30,13 +31,14 @@ export default async function TeamDashboardPage({ searchParams }: PageProps) {
     redirect("/");
   }
 
-  const { filter: filterParam } = await searchParams;
+  const { filter: filterParam, scope: scopeParam } = await searchParams;
   const filter: TeamTaskFilter =
     filterParam === "overdue"
       ? "overdue"
       : filterParam === "open"
         ? "open"
         : "all";
+  const scope: TeamTaskScope = scopeParam === "mine" ? "mine" : "team";
 
   const accessible = await getAccessibleCompanyIds(user);
   const [workload, tasks, completedCount, activity, activeShifts, recentShifts] =
@@ -64,6 +66,8 @@ export default async function TeamDashboardPage({ searchParams }: PageProps) {
         activeMembers={workload.length}
         onClock={activeShifts.length}
         filter={filter}
+        scope={scope}
+        currentUserId={user.id}
       />
 
       <TeamAttendancePanel active={activeShifts} recent={recentShifts} />
