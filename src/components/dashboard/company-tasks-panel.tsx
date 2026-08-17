@@ -59,7 +59,7 @@ export function CompanyTasksPanel({
             {status === "open" && overdue > 0 ? ` · ${overdue} overdue` : ""}
           </p>
         </div>
-        <Link href={`/companies/${companySlug}/tasks?scope=${scope}`}>
+        <Link href={`/companies/${companySlug}/board?scope=${scope}`}>
           <Button variant="outline" size="sm" className="gap-2">
             Open board
             <ArrowRight className="h-3.5 w-3.5" />

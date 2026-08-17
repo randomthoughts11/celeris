@@ -40,6 +40,14 @@ export function NewDmDialog({ teammates, currentUserId }: NewDmDialogProps) {
     startTransition(async () => {
       try {
         const result = await openDmChatAction(userId);
+        if ("error" in result && result.error) {
+          toast.error(result.error);
+          return;
+        }
+        if (!("roomId" in result) || !result.roomId) {
+          toast.error("Could not start conversation");
+          return;
+        }
         setOpen(false);
         router.push(`/chat?room=${result.roomId}`);
         router.refresh();

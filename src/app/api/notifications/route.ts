@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireApprovedApiUser } from "@/lib/auth/api";
 import {
   fetchNotifications,
   markAllRead,
@@ -7,29 +7,25 @@ import {
 } from "@/lib/db/notifications";
 
 export async function GET() {
-  const user = await getSessionUser();
-  if (!user || user.approvalStatus !== "approved") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const notifications = await fetchNotifications(user.id);
+  const auth = await requireApprovedApiUser();
+  if (auth.error) return auth.error;
+  const notifications = await fetchNotifications(auth.user.id);
   return NextResponse.json({ notifications });
 }
 
 export async function PATCH(request: Request) {
-  const user = await getSessionUser();
-  if (!user || user.approvalStatus !== "approved") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireApprovedApiUser();
+  if (auth.error) return auth.error;
 
   const body = (await request.json()) as { id?: string; markAll?: boolean };
 
   if (body.markAll) {
-    await markAllRead(user.id);
+    await markAllRead(auth.user.id);
     return NextResponse.json({ success: true });
   }
 
   if (body.id) {
-    await markNotificationRead(body.id, user.id);
+    await markNotificationRead(body.id, auth.user.id);
     return NextResponse.json({ success: true });
   }
 

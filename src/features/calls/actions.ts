@@ -1,10 +1,13 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateCompany } from "@/lib/cache/revalidate";
 import { randomUUID } from "crypto";
 import { requireAuth } from "@/lib/auth/session";
-import { requireCompanyAccess } from "@/lib/auth/access";
-import { hasPermission } from "@/lib/rbac/permissions";
+import {
+  requireCompanyAccess,
+  requireCompanyFeature,
+  shouldScopeLeadsToOwner,
+} from "@/lib/auth/access";
 import { getSql } from "@/lib/db/client";
 
 export async function logManualCallAction(
@@ -19,12 +22,31 @@ export async function logManualCallAction(
   }
 ) {
   const user = await requireAuth();
-  if (!hasPermission(user.roles, "LOG_CALLS")) {
-    return { error: "Forbidden" };
-  }
+  requireCompanyFeature(user, "calls");
   await requireCompanyAccess(user, companyId);
 
   const sql = getSql();
+
+  if (input.leadId) {
+    if (shouldScopeLeadsToOwner(user.roles)) {
+      const owned = await sql`
+        SELECT 1 FROM leads
+        WHERE id = ${input.leadId}
+          AND company_id = ${companyId}
+          AND owner_id = ${user.id}
+        LIMIT 1
+      `;
+      if (!owned[0]) return { error: "Forbidden: not your lead" };
+    } else {
+      const exists = await sql`
+        SELECT 1 FROM leads
+        WHERE id = ${input.leadId} AND company_id = ${companyId}
+        LIMIT 1
+      `;
+      if (!exists[0]) return { error: "Lead not found" };
+    }
+  }
+
   const externalId = `manual-${randomUUID()}`;
 
   await sql`
@@ -57,11 +79,13 @@ export async function logManualCallAction(
       )
     `;
     await sql`
-      UPDATE leads SET last_contact_at = now(), status = CASE WHEN status = 'new' THEN 'contacted' ELSE status END, updated_at = now()
-      WHERE id = ${input.leadId}
+      UPDATE leads SET last_contact_at = now(),
+        status = CASE WHEN status = 'new' THEN 'contacted' ELSE status END,
+        updated_at = now()
+      WHERE id = ${input.leadId} AND company_id = ${companyId}
     `;
   }
 
-  revalidatePath(`/companies`);
+  revalidateCompany();
   return { success: true };
 }

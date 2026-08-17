@@ -1,15 +1,15 @@
 import { VaultClient } from "@/components/vault/vault-client";
 import { getCompanies } from "@/features/companies/queries";
-import { requireSession } from "@/lib/auth/page-guards";
+import { requireGlobalNavAccess } from "@/lib/auth/page-guards";
 import { listVaultEntries } from "@/lib/db/vault";
-import { listApprovedUsers } from "@/lib/db/users";
+import { listDirectoryUsers } from "@/lib/db/users";
 
 export default async function VaultPage() {
-  const user = await requireSession();
+  const user = await requireGlobalNavAccess("vault");
 
   const [entries, users, companies] = await Promise.all([
     listVaultEntries(user),
-    listApprovedUsers(),
+    listDirectoryUsers(user),
     getCompanies(),
   ]);
 

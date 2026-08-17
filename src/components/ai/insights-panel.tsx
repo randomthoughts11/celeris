@@ -41,7 +41,8 @@ export function AiInsightsPanel({ insights, companyId }: AiInsightsPanelProps) {
     <Card className="border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm">
       <div className="mb-4 flex items-center gap-2">
         <Sparkles className="h-4 w-4 text-violet-400" />
-        <h3 className="font-semibold">AI Insights</h3>
+        <h3 className="font-semibold">Smart alerts</h3>
+        <span className="text-xs text-muted-foreground">Rules-based</span>
         <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-xs text-violet-300">
           {insights.length} active
         </span>

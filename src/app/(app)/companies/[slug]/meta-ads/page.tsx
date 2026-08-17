@@ -10,7 +10,7 @@ import {
 } from "@/features/companies/company-data";
 import { getCompanyBySlug } from "@/features/companies/queries";
 import { requireCompanyPageAccess } from "@/lib/auth/page-guards";
-import { canManageCompanies } from "@/lib/auth/access";
+import { canManageBrandSetup } from "@/lib/auth/access";
 import { getIntegration } from "@/lib/db/integrations";
 import {
   formatCurrency,
@@ -42,7 +42,7 @@ export default async function MetaAdsPage({ params }: PageProps) {
     typeof metaIntegration?.config?.lookerEmbedUrl === "string"
       ? metaIntegration.config.lookerEmbedUrl
       : undefined;
-  const canManage = canManageCompanies(user);
+  const canManage = canManageBrandSetup(user);
 
   const metaInsights = insights.filter((i) => i.module === "meta_ads");
   const totalSpend = campaigns.reduce((s, c) => s + c.spend, 0);

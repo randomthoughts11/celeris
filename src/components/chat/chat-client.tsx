@@ -62,8 +62,19 @@ export function ChatClient({
 
   useEffect(() => {
     if (!activeRoom) return;
-    const interval = setInterval(() => loadMessages(activeRoom), 5000);
-    return () => clearInterval(interval);
+    const tick = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      loadMessages(activeRoom);
+    };
+    const interval = setInterval(tick, 2500);
+    const onVis = () => {
+      if (!document.hidden) loadMessages(activeRoom);
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVis);
+    };
   }, [activeRoom]);
 
   useEffect(() => {

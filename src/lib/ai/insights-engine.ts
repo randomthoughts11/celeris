@@ -3,6 +3,7 @@ import type { AiInsight, CompanyMetrics } from "@/types";
 interface InsightContext {
   companyId: string;
   companyName: string;
+  companySlug: string;
   metrics: CompanyMetrics | null;
   budgetUsedPercent: number;
   monthlyBudget: number;
@@ -10,6 +11,7 @@ interface InsightContext {
 
 export function generateInsights(ctx: InsightContext): Omit<AiInsight, "id" | "created_at">[] {
   const insights: Omit<AiInsight, "id" | "created_at">[] = [];
+  const base = `/companies/${ctx.companySlug}`;
 
   if (ctx.budgetUsedPercent > 90) {
     insights.push({
@@ -20,7 +22,7 @@ export function generateInsights(ctx: InsightContext): Omit<AiInsight, "id" | "c
       recommendation: "Pause underperforming campaigns",
       explanation: `Monthly budget is ${ctx.budgetUsedPercent.toFixed(0)}% depleted. Pausing low-ROAS campaigns would extend runway while protecting profitable spend.`,
       action_label: "View Analytics",
-      action_link: null,
+      action_link: `${base}/analytics`,
       is_dismissed: false,
       metadata: {},
       expires_at: null,
@@ -35,8 +37,8 @@ export function generateInsights(ctx: InsightContext): Omit<AiInsight, "id" | "c
       title: "ROAS below target",
       recommendation: "Review campaign targeting and creatives",
       explanation: `Current ROAS of ${ctx.metrics.roas.toFixed(1)}x is below the 2x minimum threshold. Review audience targeting and pause broad match keywords with high spend.`,
-      action_label: null,
-      action_link: null,
+      action_label: "Open Ads",
+      action_link: `${base}/google-ads`,
       is_dismissed: false,
       metadata: {},
       expires_at: null,
@@ -49,11 +51,11 @@ export function generateInsights(ctx: InsightContext): Omit<AiInsight, "id" | "c
       module: "social",
       severity: "warning",
       title: "Social posting behind schedule",
-      recommendation: "Schedule content from approved drafts",
+      recommendation: "Publish from native tools and mark Board tasks done",
       explanation:
-        "Posting frequency is below target. Consistent posting drives 20%+ higher engagement across platforms.",
-      action_label: "Open Scheduler",
-      action_link: null,
+        "Posting frequency is below target. Use Publish to open the native platform, then complete related Board cards.",
+      action_label: "Open Publishing",
+      action_link: `${base}/publish`,
       is_dismissed: false,
       metadata: {},
       expires_at: null,

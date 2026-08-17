@@ -1,7 +1,25 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      {
+        source: "/companies/:slug/tasks",
+        destination: "/companies/:slug/board",
+        permanent: true,
+      },
+      {
+        source: "/companies/:slug/scheduler",
+        destination: "/companies/:slug/publish",
+        permanent: true,
+      },
+      {
+        source: "/companies/:slug/ringcentral",
+        destination: "/companies/:slug/calls",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

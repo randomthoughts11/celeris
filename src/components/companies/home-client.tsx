@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { CompanyCard } from "@/components/companies/company-card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -29,7 +31,7 @@ import {
 } from "@/features/companies/actions";
 import type { AgencyAdAccount, CompanyWithMetrics, SessionUser } from "@/types";
 import type { TaskWithAssignee } from "@/lib/db/tasks";
-import { hasPermission } from "@/lib/rbac/permissions";
+import { canViewFinancials, hasPermission, ROLE_LABELS, getHighestRole } from "@/lib/rbac/permissions";
 import { AgencyCommandCenter } from "@/components/dashboard/agency-command-center";
 
 interface HomeClientProps {
@@ -38,9 +40,21 @@ interface HomeClientProps {
   agencyTasks: TaskWithAssignee[];
 }
 
+function greeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [archiveTarget, setArchiveTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [pending, startTransition] = useTransition();
   const [googleAccounts, setGoogleAccounts] = useState<AgencyAdAccount[]>([]);
   const [metaAccounts, setMetaAccounts] = useState<AgencyAdAccount[]>([]);
@@ -50,6 +64,21 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
   const [metaName, setMetaName] = useState("");
   const canCreate = hasPermission(user.roles, "CREATE_COMPANY");
   const canArchive = hasPermission(user.roles, "MANAGE_ALL_COMPANIES");
+  const firstName = user.fullName.split(" ")[0] || user.fullName;
+  const roleLabel =
+    user.roles.length > 0
+      ? ROLE_LABELS[getHighestRole(user.roles)]
+      : "Pending role";
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return companies;
+    return companies.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.industry ?? "").toLowerCase().includes(q)
+    );
+  }, [companies, query]);
 
   const loadAccounts = async () => {
     const data = await fetchAdAccountsAction();
@@ -81,13 +110,14 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
     });
   };
 
-  const handleArchive = (companyId: string, name: string) => {
-    if (!confirm(`Archive "${name}"? This hides it from the dashboard.`)) return;
+  const handleArchive = () => {
+    if (!archiveTarget) return;
     startTransition(async () => {
-      const result = await archiveCompanyAction(companyId);
+      const result = await archiveCompanyAction(archiveTarget.id);
       if (result.error) toast.error(result.error);
       else {
-        toast.success("Company archived");
+        toast.success(`${archiveTarget.name} archived`);
+        setArchiveTarget(null);
         router.refresh();
       }
     });
@@ -95,11 +125,16 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="text-center sm:text-left">
-          <h1 className="text-3xl font-semibold tracking-tight">Your Brands</h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-sm text-violet-400">{roleLabel}</p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+            {greeting()}, {firstName}
+          </h1>
           <p className="mt-2 text-muted-foreground">
-            {companies.length} active {companies.length === 1 ? "client" : "clients"}
+            {companies.length === 0
+              ? "No brands on your desk yet."
+              : `${companies.length} brand${companies.length === 1 ? "" : "s"} · jump into Board, Inbox, or Publish from each card.`}
           </p>
         </div>
         {canCreate && (
@@ -111,14 +146,17 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
             }}
           >
             <DialogTrigger
-              className="inline-flex h-8 items-center justify-center gap-2 rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/80"
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/80"
             >
               <Plus className="h-4 w-4" />
-              Add company
+              Add brand
             </DialogTrigger>
             <DialogContent className="max-w-lg">
               <DialogHeader>
-                <DialogTitle>Create company</DialogTitle>
+                <DialogTitle>Create brand</DialogTitle>
+                <DialogDescription>
+                  Name the client. Ad accounts can be linked now or later in Settings.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div className="space-y-2">
@@ -204,7 +242,7 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
                   )}
                 </div>
                 <Button type="submit" className="w-full" disabled={pending}>
-                  {pending ? "Creating…" : "Create company"}
+                  {pending ? "Creating…" : "Create brand"}
                 </Button>
               </form>
             </DialogContent>
@@ -212,28 +250,49 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
         )}
       </div>
 
-      {(canCreate || canArchive) && <AgencyCommandCenter tasks={agencyTasks} />}
+      {agencyTasks.length > 0 && <AgencyCommandCenter tasks={agencyTasks} />}
+
+      {companies.length > 0 && (
+        <div className="relative max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Find a brand…"
+            className="pl-9"
+          />
+        </div>
+      )}
 
       {companies.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/10 py-16 text-center">
-          <p className="text-muted-foreground">No companies yet.</p>
-          {canCreate && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Click &quot;Add company&quot; to create your first brand.
-            </p>
-          )}
+        <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-20 text-center">
+          <p className="text-lg font-medium">Your brand desk is empty</p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            {canCreate
+              ? "Add the first client. You’ll get a Board, lead inbox, and publish launchpad in one place."
+              : "Ask an admin to assign you to a brand."}
+          </p>
         </div>
+      ) : filtered.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No brands match “{query}”.</p>
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {companies.map((company, index) => (
+          {filtered.map((company, index) => (
             <div key={company.id} className="relative group">
-              <CompanyCard company={company} index={index} />
+              <CompanyCard
+                company={company}
+                index={index}
+                showFinancials={canViewFinancials(user.roles)}
+                roles={user.roles}
+              />
               {canArchive && (
                 <Button
                   variant="ghost"
                   size="icon"
                   className="absolute right-3 top-3 opacity-0 transition-opacity group-hover:opacity-100"
-                  onClick={() => handleArchive(company.id, company.name)}
+                  onClick={() =>
+                    setArchiveTarget({ id: company.id, name: company.name })
+                  }
                   disabled={pending}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
@@ -243,6 +302,30 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
           ))}
         </div>
       )}
+
+      <Dialog
+        open={Boolean(archiveTarget)}
+        onOpenChange={(open) => {
+          if (!open) setArchiveTarget(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Archive {archiveTarget?.name}?</DialogTitle>
+            <DialogDescription>
+              It disappears from this desk. You can restore it later from the database if needed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setArchiveTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleArchive} disabled={pending}>
+              {pending ? "Archiving…" : "Archive brand"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

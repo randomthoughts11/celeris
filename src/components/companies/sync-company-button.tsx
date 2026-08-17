@@ -21,7 +21,11 @@ export function SyncCompanyButton({ companyId }: { companyId: string }) {
       onClick={() =>
         startTransition(async () => {
           try {
-            await syncCompanyDataAction(companyId);
+            const result = await syncCompanyDataAction(companyId);
+            if (result && "error" in result && result.error) {
+              toast.error(result.error);
+              return;
+            }
             toast.success("Data synced from Google & Meta");
             router.refresh();
           } catch {

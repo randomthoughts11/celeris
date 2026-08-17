@@ -20,6 +20,7 @@ interface SettingsIntegrationsProps {
   googleConnected: boolean;
   metaConnected: boolean;
   driveConfigured: boolean;
+  canConnectAgency?: boolean;
 }
 
 export function SettingsIntegrations({
@@ -29,6 +30,7 @@ export function SettingsIntegrations({
   metaConfigured,
   googleConnected,
   metaConnected,
+  canConnectAgency = false,
 }: SettingsIntegrationsProps) {
   return (
     <div className="space-y-8">
@@ -55,7 +57,7 @@ export function SettingsIntegrations({
                 {googleConnected ? "Connected" : "Not connected"}
               </Badge>
             </div>
-            {googleConfigured ? (
+            {canConnectAgency && googleConfigured ? (
               <a href="/api/integrations/google/connect" className="mt-4 inline-block">
                 <Button size="sm" className="gap-2">
                   <Link2 className="h-3 w-3" />
@@ -82,7 +84,7 @@ export function SettingsIntegrations({
                 {metaConnected ? "Connected" : "Not connected"}
               </Badge>
             </div>
-            {metaConfigured ? (
+            {canConnectAgency && metaConfigured ? (
               <a href="/api/integrations/meta/connect" className="mt-4 inline-block">
                 <Button size="sm" className="gap-2">
                   <Link2 className="h-3 w-3" />

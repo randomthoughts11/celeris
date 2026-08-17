@@ -1,22 +1,19 @@
 import { ChatClient } from "@/components/chat/chat-client";
 import { getChatRoomsAction } from "@/features/chat/actions";
-import { listApprovedUsers } from "@/lib/db/users";
-import { getSessionUser } from "@/lib/auth/session";
-import { redirect } from "next/navigation";
+import { listDirectoryUsers } from "@/lib/db/users";
+import { requireGlobalNavAccess } from "@/lib/auth/page-guards";
 
 export default async function ChatPage({
   searchParams,
 }: {
   searchParams: Promise<{ room?: string }>;
 }) {
-  const user = await getSessionUser();
-  if (!user) redirect("/login");
-  if (user.approvalStatus !== "approved") redirect("/pending-approval");
+  const user = await requireGlobalNavAccess("chat");
 
   const { room } = await searchParams;
   const [rooms, teammates] = await Promise.all([
     getChatRoomsAction(),
-    listApprovedUsers(),
+    listDirectoryUsers(user),
   ]);
 
   return (

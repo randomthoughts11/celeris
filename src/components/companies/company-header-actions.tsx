@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { SyncCompanyButton } from "@/components/companies/sync-company-button";
 import { openCompanyChatAction } from "@/features/chat/actions";
 
-export function CompanyHeaderActions({ companyId }: { companyId: string }) {
+export function CompanyHeaderActions({
+  companyId,
+  canSync = false,
+}: {
+  companyId: string;
+  canSync?: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -20,7 +26,7 @@ export function CompanyHeaderActions({ companyId }: { companyId: string }) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      <SyncCompanyButton companyId={companyId} />
+      {canSync && <SyncCompanyButton companyId={companyId} />}
       <Button variant="outline" size="sm" className="gap-2" onClick={openChat} disabled={pending}>
         <MessageSquare className="h-3.5 w-3.5" />
         Team chat

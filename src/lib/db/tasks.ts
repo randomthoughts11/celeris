@@ -177,15 +177,31 @@ function mapTaskRow(row: Record<string, unknown>): TaskWithAssignee {
 
 export async function logTaskTime(input: {
   taskId: string;
+  companyId: string;
   userId: string;
   minutes: number;
   note?: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const sql = getSql();
+  const owned = await sql`
+    SELECT 1 FROM tasks
+    WHERE id = ${input.taskId} AND company_id = ${input.companyId}
+    LIMIT 1
+  `;
+  if (!owned[0]) {
+    const card = await sql`
+      SELECT 1 FROM deck_cards c
+      JOIN deck_boards b ON b.id = c.board_id
+      WHERE c.id = ${input.taskId} AND b.company_id = ${input.companyId}
+      LIMIT 1
+    `;
+    if (!card[0]) return false;
+  }
   await sql`
     INSERT INTO task_time_logs (task_id, user_id, minutes, note)
     VALUES (${input.taskId}, ${input.userId}, ${input.minutes}, ${input.note ?? null})
   `;
+  return true;
 }
 
 export async function fetchCompletedTaskCount(

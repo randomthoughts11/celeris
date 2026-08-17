@@ -15,3 +15,11 @@ export function isClerkConfigured(): boolean {
 export function isAuthConfigured(): boolean {
   return isDatabaseConfigured() && isClerkConfigured();
 }
+
+/**
+ * Explicit seed/demo browsing. Never inferred from missing secrets.
+ * Requires DATABASE_URL. Does not skip auth when Clerk is configured.
+ */
+export function isDemoMode(): boolean {
+  return process.env.DEMO_MODE === "true";
+}

@@ -5,7 +5,7 @@ import { DeckBoardView, type DeckMember } from "@/components/deck/deck-board";
 import type { DeckBoard, DeckCard, DeckLabel, DeckStack } from "@/types";
 import { cn } from "@/lib/utils";
 
-export type BoardScope = "mine" | "team";
+export type BoardScope = "mine" | "created" | "team";
 
 interface BoardWorkspaceProps {
   companyId: string;
@@ -20,7 +20,7 @@ interface BoardWorkspaceProps {
 }
 
 function isMine(card: DeckCard, userId: string) {
-  return card.assignee_id === userId;
+  return card.assignee_id === userId || card.created_by === userId;
 }
 
 export function BoardWorkspace({
@@ -39,6 +39,9 @@ export function BoardWorkspace({
   const visibleCards = useMemo(() => {
     if (scope === "mine") {
       return cards.filter((c) => isMine(c, currentUserId));
+    }
+    if (scope === "created") {
+      return cards.filter((c) => c.created_by === currentUserId);
     }
     return cards;
   }, [cards, scope, currentUserId]);
@@ -64,16 +67,25 @@ export function BoardWorkspace({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Board</h1>
           <p className="text-muted-foreground">
-            {scope === "mine" ? "Your tasks" : "All team tasks"} · {open} open ·{" "}
-            {completed} completed · {overdue} overdue · {totalLogged} minutes
-            logged
+            {scope === "mine"
+              ? "Assigned to you or created by you"
+              : scope === "created"
+                ? "Created by you"
+                : "All team tasks"}{" "}
+            · {open} open · {completed} completed · {overdue} overdue ·{" "}
+            {totalLogged} minutes logged
           </p>
         </div>
-        <div className="flex rounded-lg border border-white/10 bg-white/[0.02] p-1">
+        <div className="flex flex-wrap rounded-lg border border-white/10 bg-white/[0.02] p-1">
           <ScopeChip
             active={scope === "mine"}
             onClick={() => setScope("mine")}
             label="My tasks"
+          />
+          <ScopeChip
+            active={scope === "created"}
+            onClick={() => setScope("created")}
+            label="Created by me"
           />
           <ScopeChip
             active={scope === "team"}
@@ -98,9 +110,12 @@ export function BoardWorkspace({
         </div>
       </div>
 
-      {scope === "mine" && visibleCards.length === 0 && (
+      {(scope === "mine" || scope === "created") && visibleCards.length === 0 && (
         <p className="rounded-lg border border-dashed border-white/10 px-4 py-3 text-sm text-muted-foreground">
-          No tasks assigned to you on this board. Switch to{" "}
+          {scope === "created"
+            ? "You haven’t created any cards on this board yet."
+            : "No tasks assigned to you or created by you on this board."}{" "}
+          Switch to{" "}
           <button
             type="button"
             className="text-violet-300 underline-offset-2 hover:underline"
@@ -108,7 +123,7 @@ export function BoardWorkspace({
           >
             Team tasks
           </button>{" "}
-          to see everyone’s work, or ask to be assigned.
+          to see everyone’s work.
         </p>
       )}
 

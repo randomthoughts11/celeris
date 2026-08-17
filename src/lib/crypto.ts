@@ -1,11 +1,50 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  createHmac,
+  randomBytes,
+  timingSafeEqual,
+} from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
 
 function getKey(): Buffer {
-  const secret = process.env.INTEGRATION_ENCRYPTION_KEY ?? process.env.AUTH_SECRET;
-  if (!secret) throw new Error("INTEGRATION_ENCRYPTION_KEY or AUTH_SECRET required");
+  const secret = process.env.INTEGRATION_ENCRYPTION_KEY;
+  if (!secret) throw new Error("INTEGRATION_ENCRYPTION_KEY required");
   return createHash("sha256").update(secret).digest();
+}
+
+/** Signed OAuth `state` to prevent CSRF / forged companyId. */
+export function signOAuthState(payload: Record<string, unknown>): string {
+  const body = Buffer.from(
+    JSON.stringify({ ...payload, ts: Date.now() })
+  ).toString("base64url");
+  const sig = createHmac("sha256", getKey()).update(body).digest("base64url");
+  return `${body}.${sig}`;
+}
+
+export function verifyOAuthState<T extends Record<string, unknown>>(
+  state: string,
+  maxAgeMs = 15 * 60 * 1000
+): T {
+  const dot = state.lastIndexOf(".");
+  if (dot <= 0) throw new Error("Invalid OAuth state");
+  const body = state.slice(0, dot);
+  const sig = state.slice(dot + 1);
+  const expected = createHmac("sha256", getKey()).update(body).digest("base64url");
+  const sigBuf = Buffer.from(sig);
+  const expBuf = Buffer.from(expected);
+  if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
+    throw new Error("Invalid OAuth state signature");
+  }
+  const data = JSON.parse(
+    Buffer.from(body, "base64url").toString("utf8")
+  ) as T & { ts?: number };
+  if (typeof data.ts !== "number" || Date.now() - data.ts > maxAgeMs) {
+    throw new Error("OAuth state expired — try connecting again");
+  }
+  return data;
 }
 
 export function encrypt(plaintext: string): string {

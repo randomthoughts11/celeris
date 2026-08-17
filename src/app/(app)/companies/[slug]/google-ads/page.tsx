@@ -11,7 +11,7 @@ import {
 } from "@/features/companies/company-data";
 import { getCompanyBySlug } from "@/features/companies/queries";
 import { requireCompanyPageAccess } from "@/lib/auth/page-guards";
-import { canManageCompanies } from "@/lib/auth/access";
+import { canManageBrandSetup } from "@/lib/auth/access";
 import { getIntegration } from "@/lib/db/integrations";
 import {
   formatCurrency,
@@ -41,7 +41,7 @@ export default async function GoogleAdsPage({ params }: PageProps) {
     typeof googleIntegration?.config?.lookerEmbedUrl === "string"
       ? googleIntegration.config.lookerEmbedUrl
       : undefined;
-  const canManage = canManageCompanies(user);
+  const canManage = canManageBrandSetup(user);
 
   const active = campaigns.filter((c) => c.status === "active");
   const paused = campaigns.filter((c) => c.status === "paused");

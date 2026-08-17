@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireApprovedApiUser } from "@/lib/auth/api";
 import { canAccessCompany } from "@/lib/auth/access";
 import { insertDriveFile } from "@/lib/db/drive-files";
 import { uploadToDrive } from "@/lib/google-drive/service";
 
-const MAX_SIZE = 25 * 1024 * 1024; // 25 MB
+const MAX_SIZE = 25 * 1024 * 1024;
 
 export async function POST(request: Request) {
-  const user = await getSessionUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireApprovedApiUser();
+  if (auth.error) return auth.error;
+  const user = auth.user;
 
   try {
     const formData = await request.formData();

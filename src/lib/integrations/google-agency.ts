@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { encrypt, decrypt } from "@/lib/crypto";
+import { encrypt, decrypt, signOAuthState } from "@/lib/crypto";
 import {
   getAgencyTokens,
   upsertAgencyCredential,
@@ -7,6 +7,29 @@ import {
 } from "@/lib/db/agency-credentials";
 import type { AgencyAdAccount } from "@/types";
 import { getGoogleOAuthEnv, isGoogleAdsApiConfigured } from "@/lib/config/google-oauth";
+
+/** MCC / manager account ID for Google Ads API (digits only). */
+function getLoginCustomerId(): string | undefined {
+  const raw =
+    process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID ||
+    process.env.GOOGLE_ADS_MCC_ID ||
+    "";
+  const digits = raw.replace(/\D/g, "");
+  return digits || undefined;
+}
+
+function googleAdsHeaders(accessToken: string, developerToken: string) {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    "developer-token": developerToken,
+    "Content-Type": "application/json",
+  };
+  const loginCustomerId = getLoginCustomerId();
+  if (loginCustomerId) {
+    headers["login-customer-id"] = loginCustomerId;
+  }
+  return headers;
+}
 
 export const GOOGLE_AGENCY_SCOPES = [
   "https://www.googleapis.com/auth/adwords",
@@ -33,13 +56,13 @@ function getOAuthClient() {
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 }
 
-export function getGoogleAgencyAuthUrl(): string {
+export function getGoogleAgencyAuthUrl(userId: string): string {
   const oauth2 = getOAuthClient();
   return oauth2.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
     scope: GOOGLE_AGENCY_SCOPES,
-    state: Buffer.from(JSON.stringify({ provider: "google" })).toString("base64url"),
+    state: signOAuthState({ provider: "google", userId }),
   });
 }
 
@@ -125,11 +148,7 @@ export async function listGoogleAdsCustomers(): Promise<AgencyAdAccount[]> {
         `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:search`,
         {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "developer-token": developerToken,
-            "Content-Type": "application/json",
-          },
+          headers: googleAdsHeaders(accessToken, developerToken),
           body: JSON.stringify({
             query: "SELECT customer.descriptive_name, customer.currency_code FROM customer LIMIT 1",
           }),
@@ -164,17 +183,15 @@ export async function syncGoogleAdsCampaigns(companyId: string, customerId: stri
     `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:search`,
     {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "developer-token": developerToken,
-        "Content-Type": "application/json",
-      },
+      headers: googleAdsHeaders(accessToken, developerToken),
       body: JSON.stringify({
         query: `SELECT campaign.id, campaign.name, campaign.status,
           campaign_budget.amount_micros, metrics.cost_micros, metrics.clicks,
           metrics.impressions, metrics.ctr, metrics.average_cpc, metrics.conversions,
           metrics.cost_per_conversion, metrics.conversions_value
-          FROM campaign WHERE campaign.status != 'REMOVED'`,
+          FROM campaign
+          WHERE campaign.status != 'REMOVED'
+            AND segments.date DURING LAST_30_DAYS`,
       }),
     }
   );

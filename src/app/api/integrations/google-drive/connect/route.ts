@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth/session";
+import { canManageBrandSetup, requireCompanyAccess } from "@/lib/auth/access";
+import { requireAuth } from "@/lib/auth/session";
 import { isDatabaseConfigured } from "@/lib/config";
 import { getAuthUrl, isGoogleDriveConfigured } from "@/lib/google-drive/service";
 
@@ -11,9 +12,15 @@ export async function GET(request: Request) {
     );
   }
 
-  const user = await getSessionUser();
-  if (!user) {
+  let user;
+  try {
+    user = await requireAuth();
+  } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!canManageBrandSetup(user)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -22,6 +29,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "companyId required" }, { status: 400 });
   }
 
-  const url = getAuthUrl(companyId);
+  try {
+    await requireCompanyAccess(user, companyId);
+  } catch {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const url = getAuthUrl(companyId, user.id);
   return NextResponse.redirect(url);
 }

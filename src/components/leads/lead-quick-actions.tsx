@@ -75,7 +75,7 @@ export function LeadQuickActions({
             disabled={pending}
             onClick={() =>
               router.push(
-                `/companies/${companySlug}/ringcentral?log=${lead.id}&phone=${encodeURIComponent(lead.phone ?? "")}`
+                `/companies/${companySlug}/calls?log=${lead.id}&phone=${encodeURIComponent(lead.phone ?? "")}`
               )
             }
           >

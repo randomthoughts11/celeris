@@ -15,10 +15,10 @@ export type CompanyNavItem =
   | "google-ads"
   | "meta-ads"
   | "social"
-  | "scheduler"
+  | "publish"
   | "drive"
   | "leads"
-  | "tasks"
+  | "board"
   | "calls"
   | "analytics";
 
@@ -32,14 +32,14 @@ export function canSeeCompanyNavItem(
   if (item === "google-ads" || item === "meta-ads" || item === "analytics") {
     return hasPermission(roles, "VIEW_FINANCIALS");
   }
-  if (item === "scheduler") {
-    return hasPermission(roles, "SCHEDULE_POSTS");
+  if (item === "publish") {
+    return hasPermission(roles, "PUBLISH_EXTERNALLY");
   }
   if (item === "leads" || item === "calls") {
     return hasPermission(roles, "ACCESS_LEADS");
   }
-  if (item === "tasks") {
-    return !isTelecallerFocused(roles);
+  if (item === "board") {
+    return hasPermission(roles, "ACCESS_BOARD");
   }
   return true;
 }
@@ -49,7 +49,7 @@ export function canSeeGlobalNav(
   item: "chat" | "settings" | "admin" | "team" | "vault"
 ): boolean {
   if (isTelecallerFocused(roles)) {
-    return item === "chat" || item === "vault";
+    return item === "chat";
   }
   if (item === "team") {
     return hasAnyRole(roles, ["god_mode", "admin", "manager"]);
@@ -58,7 +58,7 @@ export function canSeeGlobalNav(
     return hasPermission(roles, "MANAGE_USERS");
   }
   if (item === "settings") {
-    return hasPermission(roles, "MANAGE_ALL_COMPANIES");
+    return hasPermission(roles, "MANAGE_BRAND_SETUP");
   }
   return true;
 }

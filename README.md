@@ -5,14 +5,14 @@ AI-native CRM and operating system for digital marketing agencies. Built with Ne
 ## Features
 
 - **Company Hub** — Create clients, link Google/Meta ad accounts, health metrics
-- **Executive Dashboard** — Revenue, ROAS, CPL, goals, performance trends
-- **Google Ads & Meta Ads** — Campaign sync, budgets, AI insights
+- **Executive Dashboard** — Operations, CRM metrics, goals
+- **Google Ads & Meta Ads** — Campaign sync, Looker embeds, rule-based alerts
 - **Social Media** — Cross-platform metrics from Meta-connected pages
-- **Social Scheduler** — Draft posts with AI captions (publish via platforms manually)
+- **Publish** — Shortcuts to native platform publishers (in-app scheduling is not included)
 - **Lead Inbox** — Privyr-style workflow with call/WhatsApp quick actions
-- **Privyr sync** — CSV import + Zapier webhook for activity logs
-- **Task Management** — Kanban board with create and status updates
-- **Team Chat** — Company rooms and DMs
+- **Privyr sync** — Per-company webhook tokens + CSV import
+- **Board** — Kanban with create and status updates
+- **Team Chat** — Company rooms and DMs with coworkers
 - **Admin** — User approval, roles, company assignment
 - **RBAC** — God Mode, Admin, Manager, Designer, Telecaller
 
@@ -23,7 +23,7 @@ AI-native CRM and operating system for digital marketing agencies. Built with Ne
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui |
 | Auth | Clerk |
 | Database | Neon PostgreSQL |
-| Integrations | Google Ads, Meta Marketing API, Google Drive, OpenAI |
+| Integrations | Google Ads, Meta Marketing API, Google Drive |
 | Hosting | Vercel |
 
 ## Quick Start
@@ -60,6 +60,8 @@ Migrations live in `neon/migrations/` (001–005).
 - [Neon setup](docs/NEON.md)
 - [Google Drive](docs/GOOGLE_DRIVE.md)
 - [Developer Guide](docs/DEVELOPER.md)
+
+Set `DEMO_MODE=true` only for local seed browsing without Clerk. Missing secrets do not open the app.
 
 ## License
 

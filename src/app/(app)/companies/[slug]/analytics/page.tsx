@@ -49,7 +49,8 @@ export default async function AnalyticsPage({ params }: PageProps) {
           Marketing Analytics
         </h1>
         <p className="text-muted-foreground">
-          Cross-channel performance and forecasting
+          Cross-channel CRM snapshots. When Looker is connected on Google/Meta
+          Ads, treat those reports as the live source of truth.
         </p>
       </div>
 

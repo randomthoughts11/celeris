@@ -4,6 +4,7 @@ import {
   isAgencyConnected,
   deleteAgencyCredential,
 } from "@/lib/db/agency-credentials";
+import { signOAuthState } from "@/lib/crypto";
 import type { AgencyAdAccount } from "@/types";
 
 const META_API = "https://graph.facebook.com/v21.0";
@@ -17,7 +18,7 @@ export function isMetaAgencyConfigured(): boolean {
   return Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET && process.env.NEXT_PUBLIC_APP_URL);
 }
 
-export function getMetaAgencyAuthUrl(): string {
+export function getMetaAgencyAuthUrl(userId: string): string {
   const appId = process.env.META_APP_ID!;
   const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/meta/callback`;
   const scopes = [
@@ -27,7 +28,7 @@ export function getMetaAgencyAuthUrl(): string {
     "business_management",
     "instagram_basic",
   ].join(",");
-  const state = Buffer.from(JSON.stringify({ provider: "meta" })).toString("base64url");
+  const state = signOAuthState({ provider: "meta", userId });
   return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&state=${state}&response_type=code`;
 }
 
@@ -60,6 +61,44 @@ export async function exchangeMetaAgencyCode(code: string): Promise<void> {
 export async function getMetaAccessToken(): Promise<string> {
   const tokens = await getAgencyTokens<MetaAgencyTokens>("meta");
   if (!tokens?.access_token) throw new Error("Meta agency account not connected");
+
+  const expiringSoon =
+    tokens.expires_at != null &&
+    tokens.expires_at < Date.now() + 7 * 24 * 60 * 60 * 1000;
+
+  if (expiringSoon) {
+    const appId = process.env.META_APP_ID;
+    const appSecret = process.env.META_APP_SECRET;
+    if (appId && appSecret) {
+      try {
+        const longRes = await fetch(
+          `${META_API}/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${tokens.access_token}`
+        );
+        if (longRes.ok) {
+          const long = (await longRes.json()) as {
+            access_token: string;
+            expires_in?: number;
+          };
+          await upsertAgencyCredential({
+            provider: "meta",
+            credentials: {
+              access_token: long.access_token,
+              expires_at: long.expires_in
+                ? Date.now() + long.expires_in * 1000
+                : undefined,
+            },
+          });
+          return long.access_token;
+        }
+      } catch {
+        // fall through
+      }
+    }
+    if (tokens.expires_at != null && tokens.expires_at < Date.now()) {
+      throw new Error("Meta token expired — reconnect in Settings");
+    }
+  }
+
   return tokens.access_token;
 }
 
@@ -143,7 +182,8 @@ export async function syncMetaAdsCampaigns(companyId: string, adAccountId: strin
 
   await sql`
     UPDATE company_metrics SET
-      monthly_ad_spend = company_metrics.monthly_ad_spend + ${totalSpend},
+      monthly_ad_spend = ${totalSpend},
+      ad_spend = ${totalSpend},
       active_campaigns = ${count},
       updated_at = now()
     WHERE company_id = ${companyId}

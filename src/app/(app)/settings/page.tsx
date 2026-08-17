@@ -7,9 +7,10 @@ import { isMetaAgencyConfigured } from "@/lib/integrations/meta-agency";
 import { getGoogleAdsConfigStatus } from "@/lib/config/google-oauth";
 import { isAgencyConnected } from "@/lib/db/agency-credentials";
 import { requireSettingsAccess } from "@/lib/auth/page-guards";
+import { canManageCompanies } from "@/lib/auth/access";
 
 export default async function SettingsPage() {
-  await requireSettingsAccess();
+  const user = await requireSettingsAccess();
 
   const companies = await getCompanies();
   const driveStatuses = await Promise.all(
@@ -33,7 +34,7 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-2xl font-semibold">Settings</h1>
         <p className="text-muted-foreground">
-          Connect agency accounts, manage integrations, and storage.
+          Agency OAuth, Drive per brand, and inbound webhook tokens. Zapier and RingCentral use a token per company — not a shared env secret.
         </p>
       </div>
       <SettingsIntegrations
@@ -41,18 +42,20 @@ export default async function SettingsPage() {
         googleConfigured={googleStatus.ready}
         googleConfigHint={
           googleStatus.ready
-            ? "Server env OK — click Connect to authorize your Google account."
+            ? googleStatus.optional.length
+              ? `Server env OK. Optional: ${googleStatus.optional.join("; ")}.`
+              : "Server env OK — click Connect to authorize your Google account."
             : `Missing on server: ${googleStatus.missing.join(", ")}`
         }
         metaConfigured={isMetaAgencyConfigured()}
         googleConnected={googleConnected}
         metaConnected={metaConnected}
         driveConfigured={isGoogleDriveConfigured()}
+        canConnectAgency={canManageCompanies(user)}
       />
       <MissionCriticalSync
         appUrl={process.env.NEXT_PUBLIC_APP_URL ?? "https://celeris-bice.vercel.app"}
         companies={companies.map((c) => ({ id: c.id, name: c.name }))}
-        privyrSecretConfigured={Boolean(process.env.PRIVR_SYNC_WEBHOOK_SECRET)}
       />
     </div>
   );

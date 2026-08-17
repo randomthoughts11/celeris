@@ -43,7 +43,7 @@ Google Drive/
 | `GOOGLE_CLIENT_ID` | From Google Cloud |
 | `GOOGLE_CLIENT_SECRET` | From Google Cloud |
 | `DATABASE_URL` | From Neon (auto) |
-| `AUTH_SECRET` | Random secret |
+| `INTEGRATION_ENCRYPTION_KEY` | Random secret for token encryption |
 | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` |
 
 ### 3. Neon migration
@@ -72,7 +72,7 @@ First OAuth grants folder creation. Tokens are encrypted in the `integrations` t
 ## Security
 
 - OAuth scope: `drive.file` (app-created files only)
-- Tokens encrypted with `AUTH_SECRET` or `INTEGRATION_ENCRYPTION_KEY`
+- Tokens encrypted with `INTEGRATION_ENCRYPTION_KEY`
 - Uploads require authenticated session
 - Max file size: 25 MB per upload
 

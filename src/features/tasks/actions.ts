@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateCompany } from "@/lib/cache/revalidate";
 import { requireAuth } from "@/lib/auth/session";
-import { requireCompanyAccess } from "@/lib/auth/access";
+import { requireCompanyAccess, requireCompanyFeature } from "@/lib/auth/access";
 import { logAudit } from "@/lib/db/audit";
 import { logTaskTime } from "@/lib/db/tasks";
 
@@ -13,17 +13,20 @@ export async function logTaskTimeAction(
   note?: string
 ) {
   const user = await requireAuth();
+  requireCompanyFeature(user, "board");
   await requireCompanyAccess(user, companyId);
   if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 24 * 60) {
     return { error: "Enter a valid duration in minutes (1–1440)" };
   }
 
-  await logTaskTime({
+  const logged = await logTaskTime({
     taskId,
+    companyId,
     userId: user.id,
     minutes: Math.round(minutes),
     note: note?.trim() || undefined,
   });
+  if (!logged) return { error: "Task not found in this company" };
 
   await logAudit({
     userId: user.id,
@@ -34,6 +37,6 @@ export async function logTaskTimeAction(
     newValues: { minutes: Math.round(minutes), note },
   });
 
-  revalidatePath(`/companies`);
+  revalidateCompany();
   return { success: true };
 }

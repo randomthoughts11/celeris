@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth/session";
-import { requireCompanyAccess } from "@/lib/auth/access";
+import { canAccessCompany, canDirectMessage } from "@/lib/auth/access";
 import {
   getOrCreateCompanyRoom,
   getOrCreateDmRoom,
@@ -12,7 +12,6 @@ import {
   markRoomRead,
   sendMessage,
 } from "@/lib/db/chat";
-import { canAccessCompany } from "@/lib/auth/access";
 
 export async function getChatRoomsAction() {
   const user = await requireAuth();
@@ -49,6 +48,9 @@ export async function openCompanyChatAction(companyId: string) {
 
 export async function openDmChatAction(otherUserId: string) {
   const user = await requireAuth();
+  if (!(await canDirectMessage(user, otherUserId))) {
+    return { error: "You can only message teammates who share a brand" };
+  }
   const room = await getOrCreateDmRoom(user.id, otherUserId);
   revalidatePath("/chat");
   return { roomId: room.id };

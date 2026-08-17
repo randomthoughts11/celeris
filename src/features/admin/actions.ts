@@ -9,11 +9,13 @@ import {
   removeCompanyMember,
 } from "@/lib/db/companies";
 import {
+  getUserRoles,
   listAllUsers,
   setUserApproval,
   setUserRoles,
 } from "@/lib/db/users";
-import type { ApprovalStatus, UserRole } from "@/types";
+import { getHighestRole } from "@/lib/rbac/permissions";
+import type { UserRole } from "@/types";
 
 export async function getAdminUsersAction() {
   const user = await requireAuth();
@@ -46,6 +48,10 @@ export async function rejectUserAction(userId: string) {
 export async function setUserRoleAction(userId: string, role: UserRole) {
   const user = await requireAuth();
   if (!canManageUsers(user)) return { error: "Forbidden" };
+  // Only god_mode may grant god_mode — prevents admin self-escalation.
+  if (role === "god_mode" && !user.roles.includes("god_mode")) {
+    return { error: "Only God Mode can assign God Mode" };
+  }
   await setUserRoles(userId, [role]);
   revalidatePath("/admin");
   return { success: true };
@@ -53,12 +59,13 @@ export async function setUserRoleAction(userId: string, role: UserRole) {
 
 export async function assignUserToCompanyAction(
   userId: string,
-  companyId: string,
-  role: UserRole
+  companyId: string
 ) {
   const user = await requireAuth();
   if (!canManageUsers(user)) return { error: "Forbidden" };
-  await addCompanyMember(companyId, userId, role);
+  const roles = await getUserRoles(userId);
+  const snapshot = getHighestRole(roles);
+  await addCompanyMember(companyId, userId, snapshot);
   revalidatePath("/admin");
   return { success: true };
 }

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { getMetaAgencyAuthUrl } from "@/lib/integrations/meta-agency";
-import { requireAuth } from "@/lib/auth/session";
+import { requireApprovedApiUser } from "@/lib/auth/api";
 import { canManageCompanies } from "@/lib/auth/access";
 
 export async function GET() {
-  const user = await requireAuth();
-  if (!canManageCompanies(user)) {
+  const auth = await requireApprovedApiUser();
+  if (auth.error) return auth.error;
+  if (!canManageCompanies(auth.user)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  return NextResponse.redirect(getMetaAgencyAuthUrl());
+  return NextResponse.redirect(getMetaAgencyAuthUrl(auth.user.id));
 }

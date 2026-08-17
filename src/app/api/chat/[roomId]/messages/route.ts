@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
 import { listRoomMessages } from "@/lib/db/chat";
 import { isRoomMember } from "@/lib/db/chat";
-import { getSessionUser } from "@/lib/auth/session";
+import { requireApprovedApiUser } from "@/lib/auth/api";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ roomId: string }> }
 ) {
-  const user = await getSessionUser();
-  if (!user || user.approvalStatus !== "approved") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireApprovedApiUser();
+  if (auth.error) return auth.error;
 
   const { roomId } = await params;
-  const member = await isRoomMember(roomId, user.id);
+  const member = await isRoomMember(roomId, auth.user.id);
   if (!member) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

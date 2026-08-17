@@ -12,6 +12,7 @@ export async function refreshCompanyInsights(
   const generated = generateInsights({
     companyId: company.id,
     companyName: company.name,
+    companySlug: company.slug,
     metrics,
     budgetUsedPercent,
     monthlyBudget: company.monthly_budget,

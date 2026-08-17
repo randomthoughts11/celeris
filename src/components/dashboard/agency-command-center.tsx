@@ -26,9 +26,9 @@ export function AgencyCommandCenter({ tasks }: AgencyCommandCenterProps) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold">Agency command center</h2>
+          <h2 className="text-lg font-semibold">What&apos;s due</h2>
           <p className="text-sm text-muted-foreground">
-            Open work across all brands — {tasks.length} tasks · {overdue.length} overdue
+            Across every brand — {tasks.length} open · {overdue.length} overdue
           </p>
         </div>
         <Link href="/team">
@@ -54,7 +54,7 @@ export function AgencyCommandCenter({ tasks }: AgencyCommandCenterProps) {
                 return (
                   <li key={task.id}>
                     <Link
-                      href={`/companies/${task.company_slug}/tasks`}
+                      href={`/companies/${task.company_slug}/board`}
                       className="flex items-start justify-between gap-3 rounded-lg p-2 transition-colors hover:bg-white/5"
                     >
                       <div className="min-w-0">

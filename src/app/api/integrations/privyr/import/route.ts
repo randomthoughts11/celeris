@@ -3,23 +3,14 @@ import { parsePrivyrCsv } from "@/lib/integrations/privyr-import";
 import {
   recordSyncRun,
   upsertLeadFromExternal,
-  verifyWebhookSecret,
 } from "@/lib/integrations/lead-sync";
 import { requireAuth } from "@/lib/auth/session";
-import { canManageCompanies } from "@/lib/auth/access";
+import { canManageBrandSetup } from "@/lib/auth/access";
+import { verifyCompanyWebhookToken } from "@/lib/integrations/webhook-tokens";
 
-/** POST multipart CSV or JSON { csv, companyId } — manual Privyr export upload */
 export async function POST(request: Request) {
   const user = await requireAuth().catch(() => null);
   const secret = request.headers.get("x-webhook-secret");
-  const isWebhook = verifyWebhookSecret(secret, process.env.PRIVR_SYNC_WEBHOOK_SECRET);
-
-  if (!user && !isWebhook) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (user && !canManageCompanies(user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
 
   let companyId: string;
   let csv: string;
@@ -38,6 +29,19 @@ export async function POST(request: Request) {
 
   if (!companyId || !csv.trim()) {
     return NextResponse.json({ error: "companyId and csv required" }, { status: 400 });
+  }
+
+  const isWebhook = await verifyCompanyWebhookToken(
+    companyId,
+    "privyr_webhook",
+    secret
+  );
+
+  if (!user && !isWebhook) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (user && !canManageBrandSetup(user) && !isWebhook) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const rows = parsePrivyrCsv(csv);

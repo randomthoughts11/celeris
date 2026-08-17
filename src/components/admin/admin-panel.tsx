@@ -22,9 +22,9 @@ import {
   setUserRoleAction,
 } from "@/features/admin/actions";
 import type { AdminUser, CompanyWithMetrics, UserRole } from "@/types";
-import { ROLE_LABELS } from "@/lib/rbac/permissions";
+import { getHighestRole, ROLE_LABELS } from "@/lib/rbac/permissions";
 
-const ASSIGNABLE_ROLES: UserRole[] = [
+const BASE_ASSIGNABLE_ROLES: UserRole[] = [
   "admin",
   "manager",
   "designer",
@@ -43,13 +43,21 @@ interface AdminPanelProps {
   users: AdminUser[];
   companies: CompanyWithMetrics[];
   memberships: CompanyMembershipRow[];
+  currentUserRoles: UserRole[];
 }
 
-export function AdminPanel({ users, companies, memberships }: AdminPanelProps) {
+export function AdminPanel({
+  users,
+  companies,
+  memberships,
+  currentUserRoles,
+}: AdminPanelProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const assignableRoles: UserRole[] = currentUserRoles.includes("god_mode")
+    ? ["god_mode", ...BASE_ASSIGNABLE_ROLES]
+    : BASE_ASSIGNABLE_ROLES;
   const [assignCompany, setAssignCompany] = useState<Record<string, string>>({});
-  const [assignRole, setAssignRole] = useState<Record<string, UserRole>>({});
 
   const membershipsByUser = useMemo(() => {
     const map = new Map<string, CompanyMembershipRow[]>();
@@ -77,12 +85,11 @@ export function AdminPanel({ users, companies, memberships }: AdminPanelProps) {
 
   const assign = (userId: string) => {
     const companyId = assignCompany[userId];
-    const role = assignRole[userId] ?? "manager";
     if (!companyId) {
       toast.error("Select a company");
       return;
     }
-    act(() => assignUserToCompanyAction(userId, companyId, role));
+    act(() => assignUserToCompanyAction(userId, companyId));
   };
 
   return (
@@ -112,7 +119,11 @@ export function AdminPanel({ users, companies, memberships }: AdminPanelProps) {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Select
-                    defaultValue={u.roles[0] ?? "manager"}
+                    defaultValue={
+                      u.roles.length > 0
+                        ? getHighestRole(u.roles)
+                        : "designer"
+                    }
                     onValueChange={(role) =>
                       act(() => setUserRoleAction(u.id, role as UserRole))
                     }
@@ -121,7 +132,7 @@ export function AdminPanel({ users, companies, memberships }: AdminPanelProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {ASSIGNABLE_ROLES.map((r) => (
+                      {assignableRoles.map((r) => (
                         <SelectItem key={r} value={r}>
                           {ROLE_LABELS[r]}
                         </SelectItem>
@@ -178,7 +189,11 @@ export function AdminPanel({ users, companies, memberships }: AdminPanelProps) {
                     ))}
                     {!u.roles.includes("god_mode") && (
                       <Select
-                        value={u.roles[0] ?? "manager"}
+                        value={
+                          u.roles.length > 0
+                            ? getHighestRole(u.roles)
+                            : "designer"
+                        }
                         onValueChange={(role) =>
                           act(() => setUserRoleAction(u.id, role as UserRole))
                         }
@@ -187,7 +202,7 @@ export function AdminPanel({ users, companies, memberships }: AdminPanelProps) {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {ASSIGNABLE_ROLES.map((r) => (
+                          {assignableRoles.map((r) => (
                             <SelectItem key={r} value={r}>
                               {ROLE_LABELS[r]}
                             </SelectItem>
@@ -212,7 +227,7 @@ export function AdminPanel({ users, companies, memberships }: AdminPanelProps) {
                             variant="secondary"
                             className="gap-1 pr-1"
                           >
-                            {m.company_name} · {ROLE_LABELS[m.role]}
+                            {m.company_name}
                             <button
                               type="button"
                               className="ml-1 rounded p-0.5 hover:bg-white/10"
@@ -251,26 +266,6 @@ export function AdminPanel({ users, companies, memberships }: AdminPanelProps) {
                           {companies.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
                               {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={assignRole[u.id] ?? "manager"}
-                        onValueChange={(v) =>
-                          setAssignRole((prev) => ({
-                            ...prev,
-                            [u.id]: v as UserRole,
-                          }))
-                        }
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ASSIGNABLE_ROLES.map((r) => (
-                            <SelectItem key={r} value={r}>
-                              {ROLE_LABELS[r]}
                             </SelectItem>
                           ))}
                         </SelectContent>

@@ -18,6 +18,7 @@ export function isGoogleAdsApiConfigured(): boolean {
 export function getGoogleAdsConfigStatus(): {
   ready: boolean;
   missing: string[];
+  optional: string[];
 } {
   const { clientId, clientSecret, developerToken, appUrl } = getGoogleOAuthEnv();
   const missing: string[] = [];
@@ -25,5 +26,12 @@ export function getGoogleAdsConfigStatus(): {
   if (!clientSecret) missing.push("GOOGLE_ADS_CLIENT_SECRET or GOOGLE_CLIENT_SECRET");
   if (!developerToken) missing.push("GOOGLE_ADS_DEVELOPER_TOKEN");
   if (!appUrl) missing.push("NEXT_PUBLIC_APP_URL");
-  return { ready: missing.length === 0, missing };
+  const optional: string[] = [];
+  if (
+    !process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID &&
+    !process.env.GOOGLE_ADS_MCC_ID
+  ) {
+    optional.push("GOOGLE_ADS_LOGIN_CUSTOMER_ID (MCC) for client accounts");
+  }
+  return { ready: missing.length === 0, missing, optional };
 }

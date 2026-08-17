@@ -23,10 +23,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" className={`${inter.variable} dark`} suppressHydrationWarning>
-      <body className="min-h-screen font-sans antialiased">
-        <ClerkProvider appearance={{ theme: shadcn }}>
+  const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const tree = (
           <ThemeProvider
             attribute="class"
             defaultTheme="dark"
@@ -38,7 +36,16 @@ export default function RootLayout({
               <Toaster position="top-right" richColors />
             </TooltipProvider>
           </ThemeProvider>
-        </ClerkProvider>
+  );
+
+  return (
+    <html lang="en" className={`${inter.variable} dark`} suppressHydrationWarning>
+      <body className="min-h-screen font-sans antialiased">
+        {clerkKey ? (
+          <ClerkProvider appearance={{ theme: shadcn }}>{tree}</ClerkProvider>
+        ) : (
+          tree
+        )}
       </body>
     </html>
   );

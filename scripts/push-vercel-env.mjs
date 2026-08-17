@@ -45,8 +45,8 @@ for (const [key, value] of Object.entries(local)) {
   if (value && !SKIP.has(key)) merged[key] = value;
 }
 
-if (!merged.AUTH_SECRET) {
-  merged.AUTH_SECRET = randomBytes(32).toString("base64");
+if (!merged.INTEGRATION_ENCRYPTION_KEY) {
+  merged.INTEGRATION_ENCRYPTION_KEY = randomBytes(32).toString("base64");
 }
 
 const environments = ["production", "preview", "development"];

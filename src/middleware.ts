@@ -1,6 +1,10 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { isClerkConfigured, isDatabaseConfigured } from "@/lib/config";
+import {
+  isClerkConfigured,
+  isDatabaseConfigured,
+  isDemoMode,
+} from "@/lib/config";
 
 const isPublicRoute = createRouteMatcher([
   "/login(.*)",
@@ -8,16 +12,30 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/pending-approval(.*)",
+  "/setup(.*)",
+  "/api/webhooks/(.*)",
+  "/api/integrations/privyr/import(.*)",
 ]);
 
 const isApprovalExempt = createRouteMatcher([
   "/pending-approval(.*)",
-  "/api/(.*)",
+  "/setup(.*)",
+  "/api/webhooks/(.*)",
+  "/api/integrations/privyr/import(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
-  if (!isDatabaseConfigured() || !isClerkConfigured()) {
-    return NextResponse.next();
+  const demo = isDemoMode() && isDatabaseConfigured() && !isClerkConfigured();
+
+  if (!isDatabaseConfigured() && !isPublicRoute(request)) {
+    return NextResponse.redirect(new URL("/setup", request.url));
+  }
+
+  if (!isClerkConfigured()) {
+    if (demo || isPublicRoute(request)) {
+      return NextResponse.next();
+    }
+    return NextResponse.redirect(new URL("/setup", request.url));
   }
 
   if (!isPublicRoute(request)) {
@@ -46,7 +64,9 @@ export default clerkMiddleware(async (auth, request) => {
       return NextResponse.redirect(new URL("/pending-approval?rejected=1", request.url));
     }
   } catch {
-    // allow through; page will handle DB errors
+    return NextResponse.redirect(
+      new URL("/login?error=session_check", request.url)
+    );
   }
 
   return NextResponse.next();

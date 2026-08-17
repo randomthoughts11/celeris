@@ -157,7 +157,7 @@ export function TeamTaskStats({
               return (
                 <li key={task.id}>
                   <Link
-                    href={`/companies/${task.company_slug}/tasks`}
+                    href={`/companies/${task.company_slug}/board`}
                     className="flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-white/[0.03]"
                   >
                     <div className="min-w-0">

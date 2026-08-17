@@ -1,5 +1,5 @@
 import { google } from "googleapis";
-import { decrypt, encrypt } from "@/lib/crypto";
+import { decrypt, encrypt, signOAuthState } from "@/lib/crypto";
 import { getIntegration, upsertIntegration } from "@/lib/db/integrations";
 
 export const DRIVE_SCOPES = [
@@ -33,11 +33,13 @@ export function getGoogleOAuthClient() {
   return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 }
 
-export function getAuthUrl(companyId: string): string {
+export function getAuthUrl(companyId: string, userId: string): string {
   const oauth2 = getGoogleOAuthClient();
-  const state = Buffer.from(
-    JSON.stringify({ companyId, ts: Date.now() })
-  ).toString("base64url");
+  const state = signOAuthState({
+    provider: "google_drive",
+    companyId,
+    userId,
+  });
 
   return oauth2.generateAuthUrl({
     access_type: "offline",

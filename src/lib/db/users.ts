@@ -1,8 +1,8 @@
 import { getSql } from "./client";
-import type { AdminUser, ApprovalStatus, Profile, UserRole } from "@/types";
+import type { AdminUser, ApprovalStatus, Profile, SessionUser, UserRole } from "@/types";
+import { hasPermission } from "@/lib/rbac/permissions";
 
 export interface DbUser extends Profile {
-  password_hash: string | null;
   clerk_user_id?: string | null;
 }
 
@@ -20,17 +20,31 @@ function mapProfile(row: Record<string, unknown>): Profile {
   };
 }
 
+async function ensureAppMetaTable() {
+  const sql = getSql();
+  await sql`
+    CREATE TABLE IF NOT EXISTS app_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `;
+}
+
 export async function getUserByEmail(email: string): Promise<DbUser | null> {
   const sql = getSql();
   const rows = await sql`
-    SELECT id, email, password_hash, full_name, avatar_url, phone, is_active,
+    SELECT id, email, full_name, avatar_url, phone, is_active,
            approval_status, created_at, updated_at, clerk_user_id
     FROM profiles
     WHERE email = ${email.toLowerCase()} AND is_active = true
     LIMIT 1
   `;
   if (!rows[0]) return null;
-  return { ...mapProfile(rows[0]), password_hash: rows[0].password_hash as string | null, clerk_user_id: rows[0].clerk_user_id as string | null };
+  return {
+    ...mapProfile(rows[0]),
+    clerk_user_id: rows[0].clerk_user_id as string | null,
+  };
 }
 
 export async function getUserByClerkId(clerkUserId: string): Promise<Profile | null> {
@@ -61,10 +75,20 @@ export async function getUserRoles(userId: string): Promise<UserRole[]> {
   return rows.map((r) => r.role as UserRole);
 }
 
-export async function countUsers(): Promise<number> {
+export async function getFirstApprovedAdmin(): Promise<Profile | null> {
   const sql = getSql();
-  const rows = await sql`SELECT COUNT(*)::int AS count FROM profiles`;
-  return (rows[0]?.count as number) ?? 0;
+  const rows = await sql`
+    SELECT p.id, p.email, p.full_name, p.avatar_url, p.phone, p.is_active,
+           p.approval_status, p.created_at, p.updated_at
+    FROM profiles p
+    JOIN user_roles ur ON ur.user_id = p.id
+    WHERE p.is_active = true
+      AND p.approval_status = 'approved'
+      AND ur.role IN ('god_mode', 'admin')
+    ORDER BY p.created_at ASC
+    LIMIT 1
+  `;
+  return rows[0] ? mapProfile(rows[0]) : null;
 }
 
 export async function ensureProfileForClerkUser(input: {
@@ -78,52 +102,77 @@ export async function ensureProfileForClerkUser(input: {
   if (existing) return existing;
 
   const byEmail = await getUserByEmail(input.email);
-  if (byEmail) {
+  if (byEmail?.clerk_user_id && byEmail.clerk_user_id !== input.clerkUserId) {
+    throw new Error("This email is already linked to another account");
+  }
+
+  if (byEmail && !byEmail.clerk_user_id) {
     await sql`
       UPDATE profiles
       SET clerk_user_id = ${input.clerkUserId},
           full_name = COALESCE(NULLIF(full_name, ''), ${input.fullName}),
-          avatar_url = COALESCE(avatar_url, ${input.avatarUrl})
+          avatar_url = COALESCE(avatar_url, ${input.avatarUrl}),
+          approval_status = 'pending',
+          updated_at = now()
       WHERE id = ${byEmail.id}
     `;
+    await sql`DELETE FROM user_roles WHERE user_id = ${byEmail.id}`;
+    await sql`INSERT INTO user_roles (user_id, role) VALUES (${byEmail.id}, 'designer')`;
+    await notifyGodsOfSignup(input.fullName, input.email);
     const linked = await getUserByClerkId(input.clerkUserId);
     if (linked) return linked;
   }
 
-  const userCount = await countUsers();
-  const isFirstUser = userCount === 0;
-  const role: UserRole = isFirstUser ? "god_mode" : "manager";
-  const approvalStatus: ApprovalStatus = isFirstUser ? "approved" : "pending";
-
   const rows = await sql`
     INSERT INTO profiles (email, full_name, avatar_url, clerk_user_id, approval_status)
-    VALUES (${input.email.toLowerCase()}, ${input.fullName}, ${input.avatarUrl}, ${input.clerkUserId}, ${approvalStatus})
+    VALUES (${input.email.toLowerCase()}, ${input.fullName}, ${input.avatarUrl}, ${input.clerkUserId}, 'pending')
     RETURNING id, email, full_name, avatar_url, phone, is_active, approval_status, created_at, updated_at
   `;
   const profile = mapProfile(rows[0]);
-  await sql`INSERT INTO user_roles (user_id, role) VALUES (${profile.id}, ${role})`;
+  await sql`INSERT INTO user_roles (user_id, role) VALUES (${profile.id}, 'designer')`;
 
-  if (!isFirstUser) {
-    const godUsers = await sql`
-      SELECT p.id FROM profiles p
-      JOIN user_roles ur ON ur.user_id = p.id
-      WHERE ur.role = 'god_mode' AND p.approval_status = 'approved'
+  await ensureAppMetaTable();
+  const claimed = await sql`
+    INSERT INTO app_meta (key, value)
+    VALUES ('tenant_owner', ${profile.id})
+    ON CONFLICT (key) DO NOTHING
+    RETURNING key
+  `;
+  if (claimed[0]) {
+    await sql`
+      UPDATE profiles SET approval_status = 'approved', updated_at = now()
+      WHERE id = ${profile.id}
     `;
-    for (const g of godUsers) {
-      await sql`
-        INSERT INTO notifications (user_id, type, title, message, link)
-        VALUES (
-          ${g.id as string},
-          'approval',
-          'New user awaiting approval',
-          ${`${input.fullName} (${input.email}) signed up and needs access.`},
-          '/admin'
-        )
-      `;
-    }
+    await sql`DELETE FROM user_roles WHERE user_id = ${profile.id}`;
+    await sql`INSERT INTO user_roles (user_id, role) VALUES (${profile.id}, 'god_mode')`;
+    const owner = await getUserById(profile.id);
+    if (owner) return owner;
+  } else {
+    await notifyGodsOfSignup(input.fullName, input.email);
   }
 
   return profile;
+}
+
+async function notifyGodsOfSignup(fullName: string, email: string) {
+  const sql = getSql();
+  const godUsers = await sql`
+    SELECT p.id FROM profiles p
+    JOIN user_roles ur ON ur.user_id = p.id
+    WHERE ur.role = 'god_mode' AND p.approval_status = 'approved'
+  `;
+  for (const g of godUsers) {
+    await sql`
+      INSERT INTO notifications (user_id, type, title, message, link)
+      VALUES (
+        ${g.id as string},
+        'approval',
+        'New user awaiting approval',
+        ${`${fullName} (${email}) signed up and needs access.`},
+        '/admin'
+      )
+    `;
+  }
 }
 
 export async function listAllUsers(): Promise<AdminUser[]> {
@@ -133,20 +182,27 @@ export async function listAllUsers(): Promise<AdminUser[]> {
     FROM profiles WHERE is_active = true
     ORDER BY created_at DESC
   `;
-  const result: AdminUser[] = [];
-  for (const p of profiles) {
-    const roles = await getUserRoles(p.id as string);
-    result.push({
-      id: p.id as string,
-      email: p.email as string,
-      full_name: p.full_name as string,
-      avatar_url: (p.avatar_url as string) ?? null,
-      approval_status: (p.approval_status as ApprovalStatus) ?? "pending",
-      roles,
-      created_at: String(p.created_at),
-    });
+  if (profiles.length === 0) return [];
+  const ids = profiles.map((p) => p.id as string);
+  const roleRows = await sql`
+    SELECT user_id, role FROM user_roles WHERE user_id = ANY(${ids}::uuid[])
+  `;
+  const rolesByUser = new Map<string, UserRole[]>();
+  for (const row of roleRows) {
+    const uid = row.user_id as string;
+    const list = rolesByUser.get(uid) ?? [];
+    list.push(row.role as UserRole);
+    rolesByUser.set(uid, list);
   }
-  return result;
+  return profiles.map((p) => ({
+    id: p.id as string,
+    email: p.email as string,
+    full_name: p.full_name as string,
+    avatar_url: (p.avatar_url as string) ?? null,
+    approval_status: (p.approval_status as ApprovalStatus) ?? "pending",
+    roles: rolesByUser.get(p.id as string) ?? [],
+    created_at: String(p.created_at),
+  }));
 }
 
 export async function setUserApproval(
@@ -179,6 +235,35 @@ export async function listApprovedUsers(): Promise<Profile[]> {
     SELECT id, email, full_name, avatar_url, phone, is_active, approval_status, created_at, updated_at
     FROM profiles WHERE is_active = true AND approval_status = 'approved'
     ORDER BY full_name
+  `;
+  return rows.map(mapProfile);
+}
+
+/** Coworkers who share a company, plus admins. Admins see everyone. */
+export async function listDirectoryUsers(viewer: SessionUser): Promise<Profile[]> {
+  if (hasPermission(viewer.roles, "MANAGE_USERS")) {
+    return listApprovedUsers();
+  }
+  const sql = getSql();
+  const rows = await sql`
+    SELECT DISTINCT p.id, p.email, p.full_name, p.avatar_url, p.phone, p.is_active,
+           p.approval_status, p.created_at, p.updated_at
+    FROM profiles p
+    WHERE p.is_active = true
+      AND p.approval_status = 'approved'
+      AND (
+        p.id = ${viewer.id}
+        OR EXISTS (
+          SELECT 1 FROM company_members me
+          JOIN company_members them ON them.company_id = me.company_id
+          WHERE me.user_id = ${viewer.id} AND them.user_id = p.id
+        )
+        OR EXISTS (
+          SELECT 1 FROM user_roles ur
+          WHERE ur.user_id = p.id AND ur.role IN ('god_mode', 'admin')
+        )
+      )
+    ORDER BY p.full_name
   `;
   return rows.map(mapProfile);
 }

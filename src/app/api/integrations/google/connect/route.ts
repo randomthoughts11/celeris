@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { getGoogleAgencyAuthUrl } from "@/lib/integrations/google-agency";
-import { requireAuth } from "@/lib/auth/session";
+import { requireApprovedApiUser } from "@/lib/auth/api";
 import { canManageCompanies } from "@/lib/auth/access";
 
 export async function GET() {
-  const user = await requireAuth();
-  if (!canManageCompanies(user)) {
+  const auth = await requireApprovedApiUser();
+  if (auth.error) return auth.error;
+  if (!canManageCompanies(auth.user)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
-  return NextResponse.redirect(getGoogleAgencyAuthUrl());
+  return NextResponse.redirect(getGoogleAgencyAuthUrl(auth.user.id));
 }

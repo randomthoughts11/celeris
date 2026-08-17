@@ -1,6 +1,39 @@
 Celeris CRM — Build Log
 =======================
 
+2026-08-17 — Work desk UI + auth hard-close
+------------------------------------------
+- Home: greeting, brand search, Inbox/Board/Publish shortcuts on each card.
+- Overview: jump tiles first; duplicate ROAS charts live on Analytics only.
+- Shell: Brands in global nav, brand chip to switch, Work vs Ads tabs.
+- Publish: copy name/caption + open Board (no fake in-app scheduler).
+- Telecaller: first-contact queue with totals.
+- Fail-closed middleware, per-company webhook tokens, Board/Calls/Publish routes.
+
+2026-07-31 — Flux audit fixes (P0–P2)
+------------------------------------
+Security / integrity
+- Signed OAuth state (HMAC) for Drive, Google Ads, and Meta; Drive connect requires
+  auth + company ACL; callback verifies user + company.
+- Deck stack/label/card/comment mutations join deck_boards.company_id (no cross-company IDOR).
+- New users default to designer (pending); session no longer invents manager.
+- Only god_mode can assign god_mode. Telecaller lead/call writes enforce owner_id.
+- Meta sync sets absolute spend (no longer accumulates). Middleware fails closed on DB errors.
+
+UX / product
+- Mobile hamburger for Chat / Vault / Team / Settings / Admin.
+- Overview financials gated by VIEW_FINANCIALS; denied tabs redirect to role home.
+- Vault create/share require company access; shares limited to company members.
+- Notifications on lead create, task assign, and card comments.
+- Board: My = assignee or creator; Created by me; managers default to Team.
+- Publishing Hub copy honest (no in-app approvals); orphaned scheduler UI removed.
+- Smart alerts (renamed) with deep links; Google Ads MCC header + LAST_30_DAYS;
+  Meta token refresh near expiry; keyboard DnD; breadcrumb uses DB company name;
+  role badge uses getHighestRole; chat polls faster when tab visible.
+- RingCentral adapter returns honest errors (webhook/manual log remain the path).
+
+Optional env: GOOGLE_ADS_LOGIN_CUSTOMER_ID (or GOOGLE_ADS_MCC_ID) for MCC client sync.
+
 2026-07-31 — My tasks / Team tasks filter
 ----------------------------------------
 - Company Board defaults to My tasks (assigned to you, including completed in

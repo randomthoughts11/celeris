@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { canAccessCompany } from "@/lib/auth/access";
+import { requireAuth } from "@/lib/auth/session";
+import { verifyOAuthState } from "@/lib/crypto";
 import { exchangeCodeAndStore } from "@/lib/google-drive/service";
 
 export async function GET(request: Request) {
@@ -18,16 +21,29 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { companyId } = JSON.parse(
-      Buffer.from(state, "base64url").toString("utf8")
-    ) as { companyId: string };
+    const user = await requireAuth();
+    const payload = verifyOAuthState<{
+      companyId: string;
+      userId: string;
+      provider?: string;
+    }>(state);
 
-    await exchangeCodeAndStore(code, companyId);
+    if (payload.provider && payload.provider !== "google_drive") {
+      throw new Error("Invalid OAuth provider");
+    }
+    if (payload.userId !== user.id) {
+      throw new Error("OAuth state user mismatch");
+    }
+    if (!(await canAccessCompany(user, payload.companyId))) {
+      throw new Error("Forbidden: no access to this company");
+    }
+
+    await exchangeCodeAndStore(code, payload.companyId);
 
     const { getSql } = await import("@/lib/db/client");
     const sql = getSql();
     const rows = await sql`
-      SELECT slug FROM companies WHERE id = ${companyId} LIMIT 1
+      SELECT slug FROM companies WHERE id = ${payload.companyId} LIMIT 1
     `;
     const slug = rows[0]?.slug as string | undefined;
 

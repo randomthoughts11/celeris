@@ -1,8 +1,14 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidateApp, revalidateCompany } from "@/lib/cache/revalidate";
 import { requireAuth } from "@/lib/auth/session";
-import { canCreateCompanies, canManageCompanies, requireCompanyAccess } from "@/lib/auth/access";
+import {
+  canCreateCompanies,
+  canManageBrandSetup,
+  canManageCompanies,
+  requireCompanyAccess,
+} from "@/lib/auth/access";
+import { hasPermission } from "@/lib/rbac/permissions";
 import {
   archiveCompany,
   createCompany,
@@ -55,7 +61,7 @@ export async function createCompanyAction(formData: FormData) {
 
     await syncCompanyDataAction(company.id);
 
-    revalidatePath("/");
+    revalidateApp();
     return { success: true, slug: company.slug };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to create company" };
@@ -69,13 +75,13 @@ export async function archiveCompanyAction(companyId: string) {
   }
   await requireCompanyAccess(user, companyId);
   await archiveCompany(companyId);
-  revalidatePath("/");
+  revalidateApp();
   return { success: true };
 }
 
 export async function updateCompanyAction(companyId: string, formData: FormData) {
   const user = await requireAuth();
-  if (!canManageCompanies(user)) {
+  if (!canManageBrandSetup(user)) {
     return { error: "Forbidden" };
   }
   await requireCompanyAccess(user, companyId);
@@ -93,12 +99,15 @@ export async function updateCompanyAction(companyId: string, formData: FormData)
     metaAdAccountName: String(formData.get("metaAdAccountName") ?? "") || undefined,
   });
 
-  revalidatePath("/");
+  revalidateApp();
   return { success: true };
 }
 
 export async function syncCompanyDataAction(companyId: string) {
   const user = await requireAuth();
+  if (!hasPermission(user.roles, "MANAGE_CAMPAIGNS")) {
+    return { error: "Forbidden" };
+  }
   await requireCompanyAccess(user, companyId);
 
   const google = await getIntegration(companyId, "google_ads");
@@ -122,7 +131,7 @@ export async function syncCompanyDataAction(companyId: string) {
     }
   }
 
-  revalidatePath(`/companies`);
+  revalidateCompany();
   return { success: true };
 }
 
@@ -131,7 +140,7 @@ export async function dismissInsightAction(insightId: string, companyId: string)
   await requireCompanyAccess(user, companyId);
   const { dismissAiInsight } = await import("@/lib/db/ai-insights");
   await dismissAiInsight(insightId, companyId);
-  revalidatePath(`/companies`);
+  revalidateCompany();
   return { success: true };
 }
 
@@ -141,7 +150,7 @@ export async function setLookerEmbedAction(
   rawUrl: string
 ) {
   const user = await requireAuth();
-  if (!canManageCompanies(user)) {
+  if (!canManageBrandSetup(user)) {
     return { error: "Forbidden" };
   }
   await requireCompanyAccess(user, companyId);
@@ -149,7 +158,7 @@ export async function setLookerEmbedAction(
   const trimmed = rawUrl.trim();
   if (!trimmed) {
     await setLookerEmbedUrl(companyId, provider, null);
-    revalidatePath(`/companies`);
+    revalidateCompany();
     return { success: true };
   }
 
@@ -162,7 +171,7 @@ export async function setLookerEmbedAction(
   }
 
   await setLookerEmbedUrl(companyId, provider, embedUrl);
-  revalidatePath(`/companies`);
+  revalidateCompany();
   return { success: true };
 }
 
@@ -181,7 +190,7 @@ export async function fetchCompanyMembersAction(companyId: string) {
 
 export async function fetchAdAccountsAction() {
   const user = await requireAuth();
-  if (!canManageCompanies(user)) {
+  if (!canManageBrandSetup(user)) {
     return { google: [], meta: [] };
   }
 
@@ -191,4 +200,14 @@ export async function fetchAdAccountsAction() {
   ]);
 
   return { google, meta };
+}
+
+export async function resolveCompanyNameAction(
+  slug: string
+): Promise<string | null> {
+  const user = await requireAuth().catch(() => null);
+  if (!user) return null;
+  const { getCompanyBySlug } = await import("@/features/companies/queries");
+  const company = await getCompanyBySlug(slug);
+  return company?.name ?? null;
 }

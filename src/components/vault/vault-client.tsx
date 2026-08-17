@@ -415,7 +415,7 @@ function EntryForm({
       const result = entry
         ? await updateVaultEntryAction(entry.id, formData)
         : await createVaultEntryAction(formData);
-      if (result.error) toast.error(result.error);
+      if ("error" in result && result.error) toast.error(result.error);
       else {
         toast.success(entry ? "Entry updated" : "Entry added to vault");
         onDone();

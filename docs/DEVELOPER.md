@@ -4,7 +4,7 @@
 
 - Node.js 20+
 - npm
-- Supabase account (optional for demo mode)
+- Neon Postgres + Clerk
 
 ## Local Development
 
@@ -40,7 +40,7 @@ npx shadcn@latest add <component>
 
 ### RBAC
 
-Check permissions with helpers from `src/lib/rbac/permissions.ts`:
+Check permissions with helpers from `src/lib/rbac/permissions.ts`. Page nav is not enough — mutating server actions must call `requirePermission` or `requireCompanyFeature`.
 
 ```typescript
 import { hasPermission, canViewFinancials } from "@/lib/rbac/permissions";

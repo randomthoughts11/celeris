@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -14,23 +14,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getCompanyWebhookTokensAction } from "@/features/webhooks/actions";
 
 interface MissionCriticalSyncProps {
   appUrl: string;
   companies: { id: string; name: string }[];
-  privyrSecretConfigured: boolean;
 }
 
 export function MissionCriticalSync({
   appUrl,
   companies,
-  privyrSecretConfigured,
 }: MissionCriticalSyncProps) {
   const router = useRouter();
   const [companyId, setCompanyId] = useState(companies[0]?.id ?? "");
   const [pending, startTransition] = useTransition();
+  const [privyrToken, setPrivyrToken] = useState("");
+  const [ringcentralToken, setRingcentralToken] = useState("");
+
+  useEffect(() => {
+    if (!companyId) return;
+    let cancelled = false;
+    startTransition(async () => {
+      const result = await getCompanyWebhookTokensAction(companyId);
+      if (cancelled || "error" in result) return;
+      setPrivyrToken(result.tokens.privyr_webhook);
+      setRingcentralToken(result.tokens.ringcentral_webhook);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId]);
 
   const privyrImportUrl = `${appUrl}/api/integrations/privyr/import`;
+  const ringcentralUrl = `${appUrl}/api/webhooks/ringcentral?companyId=${companyId}`;
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -60,15 +76,15 @@ export function MissionCriticalSync({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Privyr sync</h2>
+        <h2 className="text-lg font-semibold">Inbound webhooks</h2>
         <p className="text-sm text-muted-foreground">
-          Privyr has no public API for activity logs. Automate CSV exports via Zapier
-          or upload manually below.
+          Each brand has its own secret. A leaked Zapier token cannot write to
+          another company.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label>Default company for sync</Label>
+        <Label>Company</Label>
         <Select value={companyId} onValueChange={(v) => setCompanyId(v ?? "")}>
           <SelectTrigger className="w-full max-w-sm">
             <SelectValue placeholder="Select company" />
@@ -84,12 +100,10 @@ export function MissionCriticalSync({
       </div>
 
       <Card className="space-y-4 border-amber-500/20 bg-amber-500/5 p-5">
-        <h3 className="font-semibold">Zapier automation</h3>
+        <h3 className="font-semibold">Privyr CSV</h3>
         <p className="text-sm text-muted-foreground">
-          In Privyr: Integrations → Export Client List → &quot;Since Last
-          Export&quot;. In Zapier: trigger on Privyr export email → POST CSV to
-          this URL with header <code className="text-xs">x-webhook-secret</code> and
-          form field <code className="text-xs">companyId</code>.
+          POST CSV to this URL with header <code className="text-xs">x-webhook-secret</code>{" "}
+          and form field <code className="text-xs">companyId</code>.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <code className="rounded bg-black/30 px-2 py-1 text-xs">{privyrImportUrl}</code>
@@ -97,17 +111,19 @@ export function MissionCriticalSync({
             <Copy className="h-3 w-3" />
           </Button>
         </div>
-        {!privyrSecretConfigured && (
-          <p className="text-xs text-amber-400">
-            Add PRIVR_SYNC_WEBHOOK_SECRET on Vercel for automated CSV pushes.
-          </p>
-        )}
-        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-          <li>Zapier → Email (or Privyr export trigger) → New attachment</li>
-          <li>Webhooks by Zapier → POST → paste URL above</li>
-          <li>Header: x-webhook-secret = your secret</li>
-          <li>Body: companyId = {companyId || "select company UUID"}</li>
-        </ol>
+        <div className="flex flex-wrap items-center gap-2">
+          <code className="max-w-full truncate rounded bg-black/30 px-2 py-1 text-xs">
+            {pending && !privyrToken ? "Generating token…" : privyrToken}
+          </code>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!privyrToken}
+            onClick={() => copy(privyrToken)}
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
+        </div>
         <div>
           <Label className="mb-2 block">Manual CSV upload</Label>
           <input
@@ -123,13 +139,31 @@ export function MissionCriticalSync({
         </div>
       </Card>
 
-      <Card className="border-white/5 bg-white/[0.02] p-5">
-        <h3 className="font-semibold">Long-term</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Dual-write leads from Meta/Google into Agency OS. Telecallers log calls in
-          the Lead Inbox — that becomes your source of truth. Privyr export stays as
-          backup sync until you migrate fully.
+      <Card className="space-y-4 border-white/5 bg-white/[0.02] p-5">
+        <h3 className="font-semibold">Call ingest</h3>
+        <p className="text-sm text-muted-foreground">
+          Zapier/Make POST to this URL with the brand token as{" "}
+          <code className="text-xs">x-webhook-secret</code>.
         </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <code className="rounded bg-black/30 px-2 py-1 text-xs">{ringcentralUrl}</code>
+          <Button size="sm" variant="outline" onClick={() => copy(ringcentralUrl)}>
+            <Copy className="h-3 w-3" />
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <code className="max-w-full truncate rounded bg-black/30 px-2 py-1 text-xs">
+            {pending && !ringcentralToken ? "Generating token…" : ringcentralToken}
+          </code>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!ringcentralToken}
+            onClick={() => copy(ringcentralToken)}
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
+        </div>
       </Card>
     </section>
   );

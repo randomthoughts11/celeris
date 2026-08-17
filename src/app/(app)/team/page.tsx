@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { TeamAttendancePanel } from "@/components/dashboard/team-attendance-panel";
 import {
@@ -8,8 +7,8 @@ import {
 } from "@/components/dashboard/team-task-stats";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { getAccessibleCompanyIds } from "@/lib/auth/access";
-import { getSessionUser } from "@/lib/auth/session";
+import { getAccessibleCompanyIds, canViewAuditLogs } from "@/lib/auth/access";
+import { requireGlobalNavAccess } from "@/lib/auth/page-guards";
 import { fetchRecentAuditLogs } from "@/lib/db/audit";
 import {
   fetchAgencyTasks,
@@ -17,19 +16,13 @@ import {
   fetchEmployeeWorkload,
 } from "@/lib/db/tasks";
 import { fetchActiveShifts, fetchRecentShifts } from "@/lib/db/work-shifts";
-import { hasAnyRole } from "@/lib/rbac/permissions";
 
 interface PageProps {
   searchParams: Promise<{ filter?: string; scope?: string }>;
 }
 
 export default async function TeamDashboardPage({ searchParams }: PageProps) {
-  const user = await getSessionUser();
-  if (!user) redirect("/login");
-  if (user.approvalStatus !== "approved") redirect("/pending-approval");
-  if (!hasAnyRole(user.roles, ["god_mode", "admin", "manager"])) {
-    redirect("/");
-  }
+  const user = await requireGlobalNavAccess("team");
 
   const { filter: filterParam, scope: scopeParam } = await searchParams;
   const filter: TeamTaskFilter =
@@ -50,6 +43,10 @@ export default async function TeamDashboardPage({ searchParams }: PageProps) {
       fetchActiveShifts(),
       fetchRecentShifts(30),
     ]);
+
+  const visibleActivity = canViewAuditLogs(user)
+    ? activity
+    : activity.filter((entry) => entry.action !== "vault.revealed");
 
   return (
     <div className="space-y-8">
@@ -103,14 +100,13 @@ export default async function TeamDashboardPage({ searchParams }: PageProps) {
           ))}
           {workload.length === 0 && (
             <Card className="border-white/5 bg-white/[0.02] p-8 text-center text-muted-foreground md:col-span-2">
-              No assigned tasks yet. Assign tasks on each brand&apos;s Tasks
-              page.
+              No assigned tasks yet. Assign work on each brand&apos;s Board.
             </Card>
           )}
         </div>
       </section>
 
-      <ActivityFeed entries={activity} title="Team activity log" />
+      <ActivityFeed entries={visibleActivity} title="Team activity log" />
     </div>
   );
 }
