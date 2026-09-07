@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { AiInsightsPanel } from "@/components/ai/insights-panel";
 import { AdsAccountBar } from "@/components/companies/ads-account-bar";
+import { LookerStudioEmbed } from "@/components/reports/looker-studio-embed";
+import { LookerReportSettings } from "@/components/reports/looker-report-settings";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getAiInsights, getMetaAdsCampaigns } from "@/features/companies/company-data";
@@ -72,18 +74,42 @@ export default async function MetaAdsPage({ params }: PageProps) {
   const totalSpend = campaigns.reduce((s, c) => s + c.spend, 0);
   const totalLeads = adSets.reduce((s, a) => s + a.leads_count, 0);
   const cpl = totalLeads > 0 ? totalSpend / totalLeads : 0;
+  const lookerEmbedUrl =
+    typeof metaIntegration?.config?.lookerEmbedUrl === "string"
+      ? metaIntegration.config.lookerEmbedUrl
+      : undefined;
 
   return (
     <div className="space-y-8">
       <div>
         <p className="text-xs font-medium uppercase tracking-wider text-violet-400">
-          Last 30 days
+          Ads report
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Meta Ads</h1>
         <p className="text-muted-foreground">
-          Campaign / ad set / ad tracking with CPL, ROAS, and branch attribution.
+          Live Looker dashboard for this brand.
         </p>
       </div>
+
+      {canManage && (
+        <LookerReportSettings
+          companyId={company.id}
+          provider="meta_ads"
+          currentUrl={lookerEmbedUrl}
+          label="Meta Ads"
+        />
+      )}
+
+      {lookerEmbedUrl ? (
+        <LookerStudioEmbed
+          url={lookerEmbedUrl}
+          title={`${company.name} Meta Ads`}
+        />
+      ) : (
+        <Card className="border-white/5 bg-white/[0.02] p-8 text-center text-sm text-muted-foreground">
+          No Meta Ads dashboard linked for this brand yet.
+        </Card>
+      )}
 
       <AdsAccountBar
         companyId={company.id}

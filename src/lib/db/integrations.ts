@@ -72,6 +72,24 @@ export async function markIntegrationSynced(
   `;
 }
 
+export async function setLookerEmbedUrl(
+  companyId: string,
+  provider: "meta_ads" | "google_ads",
+  embedUrl: string | null
+): Promise<void> {
+  const existing = await getIntegration(companyId, provider);
+  const config = { ...(existing?.config ?? {}) };
+  if (embedUrl) config.lookerEmbedUrl = embedUrl;
+  else delete config.lookerEmbedUrl;
+
+  await upsertIntegration({
+    companyId,
+    provider,
+    isConnected: true,
+    config,
+  });
+}
+
 export async function recomputeCompanyAdsMetrics(companyId: string): Promise<void> {
   const sql = getSql();
   const [google] = await sql`

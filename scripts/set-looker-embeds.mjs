@@ -6,7 +6,8 @@ const META_EMBED =
 const GOOGLE_EMBED =
   "https://datastudio.google.com/embed/reporting/37c69b65-b93e-495e-915a-7f90ad42a555/page/p_wonj6c0dld";
 
-const envFile = existsSync(".env.local") ? ".env.local" : ".env";
+const envFile = [".env.local", ".env"].find((f) => existsSync(f));
+if (!envFile) throw new Error("No .env.local or .env");
 const env = readFileSync(envFile, "utf8");
 const match =
   env.match(/DATABASE_URL_UNPOOLED="([^"]+)"/) ??

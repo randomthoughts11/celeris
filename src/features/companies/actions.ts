@@ -18,7 +18,9 @@ import { refreshCompanyInsights } from "@/lib/db/ai-insights";
 import {
   getIntegration,
   recomputeCompanyAdsMetrics,
+  setLookerEmbedUrl,
 } from "@/lib/db/integrations";
+import { parseLookerEmbedUrl } from "@/lib/integrations/looker-studio";
 import { fetchCompanyById } from "@/lib/db/queries";
 import {
   listGoogleAdsCustomers,
@@ -102,6 +104,35 @@ export async function updateCompanyAction(companyId: string, formData: FormData)
   });
 
   revalidateApp();
+  return { success: true };
+}
+
+export async function setLookerEmbedAction(
+  companyId: string,
+  provider: "meta_ads" | "google_ads",
+  url: string
+) {
+  const user = await requireAuth();
+  if (!canManageBrandSetup(user)) return { error: "Forbidden" };
+  await requireCompanyAccess(user, companyId);
+
+  const trimmed = url.trim();
+  if (!trimmed) {
+    await setLookerEmbedUrl(companyId, provider, null);
+    revalidateCompany();
+    return { success: true };
+  }
+
+  const embedUrl = parseLookerEmbedUrl(trimmed);
+  if (!embedUrl) {
+    return {
+      error:
+        "Use a Looker Studio embed URL (File → Embed report → copy the URL).",
+    };
+  }
+
+  await setLookerEmbedUrl(companyId, provider, embedUrl);
+  revalidateCompany();
   return { success: true };
 }
 
