@@ -60,24 +60,57 @@ export async function disconnectIntegration(
   `;
 }
 
-export async function setLookerEmbedUrl(
+export async function markIntegrationSynced(
   companyId: string,
-  provider: "meta_ads" | "google_ads",
-  embedUrl: string | null
+  provider: string
 ): Promise<void> {
-  const existing = await getIntegration(companyId, provider);
-  const config = { ...(existing?.config ?? {}) };
+  const sql = getSql();
+  await sql`
+    UPDATE integrations
+    SET last_synced_at = now(), updated_at = now()
+    WHERE company_id = ${companyId} AND provider = ${provider}
+  `;
+}
 
-  if (embedUrl) {
-    config.lookerEmbedUrl = embedUrl;
-  } else {
-    delete config.lookerEmbedUrl;
-  }
+export async function recomputeCompanyAdsMetrics(companyId: string): Promise<void> {
+  const sql = getSql();
+  const [google] = await sql`
+    SELECT
+      COALESCE(SUM(daily_spend), 0)::float AS spend,
+      COALESCE(SUM(daily_spend * roas), 0)::float AS conversion_value,
+      COUNT(*) FILTER (WHERE status = 'active')::int AS active
+    FROM google_ads_campaigns
+    WHERE company_id = ${companyId}
+  `;
+  const [meta] = await sql`
+    SELECT
+      COALESCE(SUM(spend), 0)::float AS spend,
+      COALESCE(SUM(spend * roas), 0)::float AS conversion_value,
+      COUNT(*) FILTER (WHERE status = 'active')::int AS active
+    FROM meta_ads_campaigns
+    WHERE company_id = ${companyId}
+  `;
 
-  await upsertIntegration({
-    companyId,
-    provider,
-    isConnected: existing?.is_connected ?? Boolean(embedUrl),
-    config,
-  });
+  const spend = Number(google?.spend ?? 0) + Number(meta?.spend ?? 0);
+  const conversionValue =
+    Number(google?.conversion_value ?? 0) + Number(meta?.conversion_value ?? 0);
+  const active = Number(google?.active ?? 0) + Number(meta?.active ?? 0);
+  const roas = spend > 0 ? conversionValue / spend : 0;
+
+  const [leads] = await sql`
+    SELECT COUNT(*)::int AS n FROM leads WHERE company_id = ${companyId}
+  `;
+  const leadCount = Number(leads?.n ?? 0);
+  const costPerLead = leadCount > 0 ? spend / leadCount : 0;
+
+  await sql`
+    UPDATE company_metrics SET
+      monthly_ad_spend = ${spend},
+      ad_spend = ${spend},
+      active_campaigns = ${active},
+      roas = ${roas},
+      cost_per_lead = ${costPerLead},
+      updated_at = now()
+    WHERE company_id = ${companyId}
+  `;
 }

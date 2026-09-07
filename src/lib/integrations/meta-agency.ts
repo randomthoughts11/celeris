@@ -4,7 +4,12 @@ import {
   isAgencyConnected,
   deleteAgencyCredential,
 } from "@/lib/db/agency-credentials";
+import { markIntegrationSynced } from "@/lib/db/integrations";
 import { signOAuthState } from "@/lib/crypto";
+import {
+  metaHealthScore,
+  metaRoasFromInsights,
+} from "@/lib/integrations/ads-metrics";
 import type { AgencyAdAccount } from "@/types";
 
 const META_API = "https://graph.facebook.com/v21.0";
@@ -25,6 +30,8 @@ export function getMetaAgencyAuthUrl(userId: string): string {
     "ads_read",
     "ads_management",
     "pages_read_engagement",
+    "pages_messaging",
+    "instagram_manage_messages",
     "business_management",
     "instagram_basic",
   ].join(",");
@@ -119,28 +126,43 @@ export async function listMetaAdAccounts(): Promise<AgencyAdAccount[]> {
   }));
 }
 
-export async function syncMetaAdsCampaigns(companyId: string, adAccountId: string): Promise<number> {
+export async function syncMetaAdsCampaigns(
+  companyId: string,
+  adAccountId: string
+): Promise<number> {
   const token = await getMetaAccessToken();
   const actId = adAccountId.startsWith("act_") ? adAccountId : `act_${adAccountId}`;
 
-  const res = await fetch(
-    `${META_API}/${actId}/campaigns?fields=id,name,status,insights{spend,impressions,reach,frequency,ctr,actions}&access_token=${token}`
-  );
-  if (!res.ok) throw new Error(`Meta sync failed: ${await res.text()}`);
+  const [campaignsRes, insightsRes] = await Promise.all([
+    fetch(
+      `${META_API}/${actId}/campaigns?fields=id,name,status&limit=200&access_token=${token}`
+    ),
+    fetch(
+      `${META_API}/${actId}/insights?level=campaign&date_preset=last_30d&fields=campaign_id,campaign_name,spend,impressions,reach,frequency,ctr,clicks,actions,action_values,purchase_roas&limit=500&access_token=${token}`
+    ),
+  ]);
 
-  const data = (await res.json()) as {
-    data?: Array<{
-      id: string;
-      name: string;
-      status: string;
-      insights?: { data?: Array<Record<string, unknown>> };
-    }>;
+  if (!campaignsRes.ok) {
+    throw new Error(`Meta sync failed: ${await campaignsRes.text()}`);
+  }
+  if (!insightsRes.ok) {
+    throw new Error(`Meta insights failed: ${await insightsRes.text()}`);
+  }
+
+  const campaignData = (await campaignsRes.json()) as {
+    data?: Array<{ id: string; name: string; status: string }>;
   };
+  const insightData = (await insightsRes.json()) as {
+    data?: Array<Record<string, unknown> & { campaign_id?: string }>;
+  };
+
+  const insightsById = new Map<string, Record<string, unknown>>();
+  for (const row of insightData.data ?? []) {
+    if (row.campaign_id) insightsById.set(String(row.campaign_id), row);
+  }
 
   const { getSql } = await import("@/lib/db/client");
   const sql = getSql();
-  let count = 0;
-  let totalSpend = 0;
 
   const statusMap: Record<string, string> = {
     ACTIVE: "active",
@@ -149,47 +171,178 @@ export async function syncMetaAdsCampaigns(companyId: string, adAccountId: strin
     DELETED: "ended",
   };
 
-  for (const c of data.data ?? []) {
-    const insights = c.insights?.data?.[0] ?? {};
-    const spend = Number(insights.spend ?? 0);
-    totalSpend += spend;
-    const conversions = Array.isArray(insights.actions)
-      ? (insights.actions as Array<{ action_type: string; value: string }>)
-          .filter((a) => a.action_type === "purchase" || a.action_type === "lead")
-          .reduce((s, a) => s + Number(a.value), 0)
-      : 0;
+  const campaigns = campaignData.data ?? [];
+  for (const c of campaigns) {
+    const parsed = metaRoasFromInsights(insightsById.get(c.id) ?? {});
+    const health = metaHealthScore(parsed.roas, parsed.ctr, parsed.spend);
 
     await sql`
       INSERT INTO meta_ads_campaigns (
         company_id, external_id, name, status, reach, impressions,
-        frequency, spend, conversions, roas, ctr, synced_at
+        frequency, spend, conversions, roas, ctr, health_score, synced_at
       ) VALUES (
         ${companyId}, ${c.id}, ${c.name},
         ${statusMap[c.status] ?? "active"},
-        ${Number(insights.reach ?? 0)}, ${Number(insights.impressions ?? 0)},
-        ${Number(insights.frequency ?? 0)}, ${spend}, ${conversions},
-        ${spend > 0 ? conversions / spend : 0},
-        ${Number(insights.ctr ?? 0)}, now()
+        ${parsed.reach}, ${parsed.impressions},
+        ${parsed.frequency}, ${parsed.spend}, ${parsed.conversions},
+        ${parsed.roas}, ${parsed.ctr}, ${health}, now()
       )
       ON CONFLICT (company_id, external_id) DO UPDATE SET
         name = EXCLUDED.name, status = EXCLUDED.status,
         reach = EXCLUDED.reach, impressions = EXCLUDED.impressions,
+        frequency = EXCLUDED.frequency,
         spend = EXCLUDED.spend, conversions = EXCLUDED.conversions,
+        roas = EXCLUDED.roas, ctr = EXCLUDED.ctr,
+        health_score = EXCLUDED.health_score,
         synced_at = now()
     `;
-    count++;
   }
 
-  await sql`
-    UPDATE company_metrics SET
-      monthly_ad_spend = ${totalSpend},
-      ad_spend = ${totalSpend},
-      active_campaigns = ${count},
-      updated_at = now()
-    WHERE company_id = ${companyId}
-  `;
+  const keepMetaIds = campaigns.map((c) => c.id);
+  if (keepMetaIds.length > 0) {
+    await sql`
+      DELETE FROM meta_ads_campaigns
+      WHERE company_id = ${companyId}
+        AND NOT (external_id = ANY(${keepMetaIds}))
+    `;
+  } else {
+    await sql`DELETE FROM meta_ads_campaigns WHERE company_id = ${companyId}`;
+  }
 
-  return count;
+  await markIntegrationSynced(companyId, "meta_ads");
+
+  // Deep sync: ad sets + ads (best-effort; don't fail campaign sync)
+  try {
+    await syncMetaAdSetsAndAds(companyId, actId, token);
+  } catch {
+    // ponytail: ad-level sync optional until permissions granted
+  }
+
+  return campaigns.length;
+}
+
+async function syncMetaAdSetsAndAds(
+  companyId: string,
+  actId: string,
+  token: string
+): Promise<void> {
+  const { upsertMetaAdSet, upsertMetaAd } = await import("@/lib/db/attribution");
+  const { getSql } = await import("@/lib/db/client");
+  const sql = getSql();
+
+  const [adSetsRes, adsRes, adSetInsights, adInsights] = await Promise.all([
+    fetch(
+      `${META_API}/${actId}/adsets?fields=id,name,status,campaign_id&limit=200&access_token=${token}`
+    ),
+    fetch(
+      `${META_API}/${actId}/ads?fields=id,name,status,adset_id,campaign_id&limit=200&access_token=${token}`
+    ),
+    fetch(
+      `${META_API}/${actId}/insights?level=adset&date_preset=last_30d&fields=adset_id,spend,impressions,reach,clicks,actions&limit=500&access_token=${token}`
+    ),
+    fetch(
+      `${META_API}/${actId}/insights?level=ad&date_preset=last_30d&fields=ad_id,spend,impressions,reach,clicks,actions&limit=500&access_token=${token}`
+    ),
+  ]);
+
+  const insightNum = (row: Record<string, unknown> | undefined, key: string) =>
+    Number(row?.[key] ?? 0) || 0;
+  const leadCount = (row: Record<string, unknown> | undefined) => {
+    const actions = row?.actions as Array<{ action_type?: string; value?: string }> | undefined;
+    const lead = actions?.find(
+      (a) => a.action_type === "lead" || a.action_type === "onsite_conversion.lead_grouped"
+    );
+    return Number(lead?.value ?? 0) || 0;
+  };
+
+  const adSetInsightMap = new Map<string, Record<string, unknown>>();
+  if (adSetInsights.ok) {
+    const data = (await adSetInsights.json()) as {
+      data?: Array<Record<string, unknown> & { adset_id?: string }>;
+    };
+    for (const row of data.data ?? []) {
+      if (row.adset_id) adSetInsightMap.set(String(row.adset_id), row);
+    }
+  }
+
+  const campaignIdByExternal = new Map<string, string>();
+  const campRows = await sql`
+    SELECT id, external_id FROM meta_ads_campaigns WHERE company_id = ${companyId}
+  `;
+  for (const r of campRows) {
+    campaignIdByExternal.set(r.external_id as string, r.id as string);
+  }
+
+  const adSetDbIdByExternal = new Map<string, string>();
+
+  if (adSetsRes.ok) {
+    const data = (await adSetsRes.json()) as {
+      data?: Array<{ id: string; name: string; status: string; campaign_id?: string }>;
+    };
+    for (const s of data.data ?? []) {
+      const ins = adSetInsightMap.get(s.id);
+      await upsertMetaAdSet({
+        companyId,
+        campaignId: s.campaign_id
+          ? campaignIdByExternal.get(s.campaign_id) ?? null
+          : null,
+        externalId: s.id,
+        name: s.name,
+        status: s.status,
+        spend: insightNum(ins, "spend"),
+        impressions: insightNum(ins, "impressions"),
+        clicks: insightNum(ins, "clicks"),
+        reach: insightNum(ins, "reach"),
+        leadsCount: leadCount(ins),
+      });
+    }
+    const adSetRows = await sql`
+      SELECT id, external_id FROM meta_ad_sets WHERE company_id = ${companyId}
+    `;
+    for (const r of adSetRows) {
+      adSetDbIdByExternal.set(r.external_id as string, r.id as string);
+    }
+  }
+
+  const adInsightMap = new Map<string, Record<string, unknown>>();
+  if (adInsights.ok) {
+    const data = (await adInsights.json()) as {
+      data?: Array<Record<string, unknown> & { ad_id?: string }>;
+    };
+    for (const row of data.data ?? []) {
+      if (row.ad_id) adInsightMap.set(String(row.ad_id), row);
+    }
+  }
+
+  if (adsRes.ok) {
+    const data = (await adsRes.json()) as {
+      data?: Array<{
+        id: string;
+        name: string;
+        status: string;
+        adset_id?: string;
+        campaign_id?: string;
+      }>;
+    };
+    for (const ad of data.data ?? []) {
+      const ins = adInsightMap.get(ad.id);
+      await upsertMetaAd({
+        companyId,
+        adSetId: ad.adset_id ? adSetDbIdByExternal.get(ad.adset_id) ?? null : null,
+        campaignId: ad.campaign_id
+          ? campaignIdByExternal.get(ad.campaign_id) ?? null
+          : null,
+        externalId: ad.id,
+        name: ad.name,
+        status: ad.status,
+        spend: insightNum(ins, "spend"),
+        impressions: insightNum(ins, "impressions"),
+        clicks: insightNum(ins, "clicks"),
+        reach: insightNum(ins, "reach"),
+        leadsCount: leadCount(ins),
+      });
+    }
+  }
 }
 
 export async function syncMetaSocialAccounts(companyId: string, adAccountId: string): Promise<void> {
@@ -245,4 +398,54 @@ export async function syncMetaSocialAccounts(companyId: string, adAccountId: str
 
 export async function disconnectMetaAgency(): Promise<void> {
   await deleteAgencyCredential("meta");
+}
+
+/** Send Messenger / IG DM via Graph API. Needs Meta agency connect + pages_messaging. */
+export async function sendMetaPageMessage(input: {
+  pageId: string;
+  recipientId: string;
+  text: string;
+}): Promise<{ ok: true; messageId: string } | { ok: false; error: string }> {
+  if (!(await isAgencyConnected("meta"))) {
+    return { ok: false, error: "Connect Meta in Settings to send messages" };
+  }
+  try {
+    const userToken = await getMetaAccessToken();
+    const pageRes = await fetch(
+      `${META_API}/${input.pageId}?fields=access_token&access_token=${userToken}`
+    );
+    if (!pageRes.ok) {
+      return {
+        ok: false,
+        error: `Meta page token failed: ${pageRes.status} ${(await pageRes.text()).slice(0, 160)}`,
+      };
+    }
+    const page = (await pageRes.json()) as { access_token?: string };
+    if (!page.access_token) {
+      return { ok: false, error: "No page access token — reconnect Meta with pages_messaging" };
+    }
+    const res = await fetch(`${META_API}/${input.pageId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipient: { id: input.recipientId },
+        message: { text: input.text },
+        messaging_type: "RESPONSE",
+        access_token: page.access_token,
+      }),
+    });
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: `Meta send failed: ${res.status} ${(await res.text()).slice(0, 200)}`,
+      };
+    }
+    const data = (await res.json()) as { message_id?: string };
+    return { ok: true, messageId: data.message_id ?? `meta-${Date.now()}` };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Meta send failed",
+    };
+  }
 }

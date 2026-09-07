@@ -6,7 +6,6 @@ import { CompanyEditDialog } from "@/components/companies/company-edit-dialog";
 import { CompanyHeaderActions } from "@/components/companies/company-header-actions";
 import { CompanyJumpBar } from "@/components/companies/company-jump-bar";
 import { CompanyTasksPanel } from "@/components/dashboard/company-tasks-panel";
-import { DashboardLinks } from "@/components/dashboard/dashboard-links";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { Progress } from "@/components/ui/progress";
 import { Card } from "@/components/ui/card";
@@ -16,7 +15,6 @@ import { getCompanyBySlug } from "@/features/companies/queries";
 import { requireCompanyPageAccess } from "@/lib/auth/page-guards";
 import { canManageBrandSetup } from "@/lib/auth/access";
 import { canViewFinancials, hasPermission } from "@/lib/rbac/permissions";
-import { getIntegration } from "@/lib/db/integrations";
 import { fetchTasksWithAssignees } from "@/lib/db/tasks";
 import { formatCurrency, formatPercent } from "@/lib/format";
 
@@ -32,22 +30,10 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
 
   const showFinancials = canViewFinancials(user.roles);
   const metrics = company.metrics;
-  const [insights, tasks, googleIntegration, metaIntegration] =
-    await Promise.all([
-      getAiInsights(company.id),
-      fetchTasksWithAssignees(company.id),
-      getIntegration(company.id, "google_ads"),
-      getIntegration(company.id, "meta_ads"),
-    ]);
-
-  const googleLookerUrl =
-    typeof googleIntegration?.config?.lookerEmbedUrl === "string"
-      ? googleIntegration.config.lookerEmbedUrl
-      : undefined;
-  const metaLookerUrl =
-    typeof metaIntegration?.config?.lookerEmbedUrl === "string"
-      ? metaIntegration.config.lookerEmbedUrl
-      : undefined;
+  const [insights, tasks] = await Promise.all([
+    getAiInsights(company.id),
+    fetchTasksWithAssignees(company.id),
+  ]);
 
   const leadsCount = metrics?.leads_count ?? 0;
   const revenueProgress = metrics
@@ -58,7 +44,9 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
     : 0;
   const adsMetricsEmpty =
     (metrics?.ad_spend ?? 0) === 0 && (metrics?.monthly_ad_spend ?? 0) === 0;
-  const openTasks = metrics?.open_tasks ?? tasks.filter((t) => !["done", "cancelled"].includes(t.status)).length;
+  const openTasks =
+    metrics?.open_tasks ??
+    tasks.filter((t) => !["done", "cancelled"].includes(t.status)).length;
 
   return (
     <div className="space-y-8">
@@ -71,8 +59,7 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
             {company.name}
           </h1>
           <p className="text-muted-foreground">
-            Work first. Charts live on Analytics
-            {googleLookerUrl || metaLookerUrl ? " and Looker on the Ads pages." : "."}
+            Work first. Ads numbers come from a Sync on Google Ads / Meta Ads.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -89,14 +76,6 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
         roles={user.roles}
         openTasks={openTasks}
         leadsCount={leadsCount}
-      />
-
-      <DashboardLinks
-        companySlug={slug}
-        googleLookerUrl={googleLookerUrl}
-        metaLookerUrl={metaLookerUrl}
-        leadsCount={leadsCount}
-        showAdsNote={adsMetricsEmpty && Boolean(googleLookerUrl || metaLookerUrl)}
       />
 
       <CompanyTasksPanel
@@ -125,14 +104,12 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
         {showFinancials ? (
           <MetricCard
             label="Ad spend"
-            value={
-              adsMetricsEmpty && (googleLookerUrl || metaLookerUrl)
-                ? "In Looker"
-                : formatCurrency(metrics?.ad_spend ?? metrics?.monthly_ad_spend ?? 0)
-            }
+            value={formatCurrency(
+              metrics?.ad_spend ?? metrics?.monthly_ad_spend ?? 0
+            )}
             subValue={
               adsMetricsEmpty
-                ? "See Google / Meta Ads pages"
+                ? "Sync Google / Meta Ads to fill this"
                 : `${(metrics?.budget_used_percent ?? 0).toFixed(0)}% budget used`
             }
           />
@@ -192,7 +169,7 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
             </h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {showFinancials
-                ? "ROAS, spend trends, and Looker reports are on Analytics and the Ads pages — this screen stays for work."
+                ? "ROAS and spend live on Analytics and the Google / Meta Ads pages after you sync."
                 : "Use Board and Publish for day-to-day delivery. Financial charts are for managers and admins."}
             </p>
           </div>

@@ -2,6 +2,7 @@ import type { UserRole } from "@/types";
 
 const ROLE_HIERARCHY: Record<UserRole, number> = {
   telecaller: 1,
+  salesperson: 2,
   designer: 2,
   manager: 3,
   admin: 4,
@@ -17,11 +18,65 @@ export const PERMISSIONS = {
   MANAGE_ALL_COMPANIES: ["god_mode", "admin"] as UserRole[],
   CREATE_COMPANY: ["god_mode", "admin", "manager"] as UserRole[],
   MANAGE_BRAND_SETUP: ["god_mode", "admin", "manager"] as UserRole[],
-  ACCESS_LEADS: ["god_mode", "manager", "admin", "telecaller"] as UserRole[],
-  LOG_CALLS: ["god_mode", "manager", "admin", "telecaller"] as UserRole[],
-  MANAGE_OWN_LEADS: ["telecaller"] as UserRole[],
+  ACCESS_LEADS: [
+    "god_mode",
+    "manager",
+    "admin",
+    "telecaller",
+    "salesperson",
+  ] as UserRole[],
+  LOG_CALLS: [
+    "god_mode",
+    "manager",
+    "admin",
+    "telecaller",
+    "salesperson",
+  ] as UserRole[],
+  MANAGE_OWN_LEADS: ["telecaller", "salesperson"] as UserRole[],
   ACCESS_BOARD: ["god_mode", "manager", "admin", "designer"] as UserRole[],
   PUBLISH_EXTERNALLY: ["god_mode", "manager", "designer", "admin"] as UserRole[],
+  ACCESS_CUSTOMERS: [
+    "god_mode",
+    "manager",
+    "admin",
+    "salesperson",
+  ] as UserRole[],
+  ACCESS_APPOINTMENTS: [
+    "god_mode",
+    "manager",
+    "admin",
+    "salesperson",
+  ] as UserRole[],
+  ACCESS_MESSAGING: [
+    "god_mode",
+    "manager",
+    "admin",
+    "salesperson",
+    "telecaller",
+  ] as UserRole[],
+  ACCESS_AI_CALLS: [
+    "god_mode",
+    "manager",
+    "admin",
+    "salesperson",
+    "telecaller",
+  ] as UserRole[],
+  ACCESS_KNOWLEDGE: [
+    "god_mode",
+    "manager",
+    "admin",
+    "salesperson",
+    "telecaller",
+  ] as UserRole[],
+  MANAGE_AUTOMATIONS: ["god_mode", "admin", "manager"] as UserRole[],
+  MANAGE_BRANCHES: ["god_mode", "admin", "manager"] as UserRole[],
+  ACCESS_DASHBOARDS: [
+    "god_mode",
+    "manager",
+    "admin",
+    "salesperson",
+    "designer",
+  ] as UserRole[],
 } as const;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -61,5 +116,6 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   manager: "Manager",
   designer: "Designer",
   telecaller: "Telecaller",
+  salesperson: "Salesperson",
   admin: "Admin",
 };

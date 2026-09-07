@@ -33,7 +33,7 @@ export async function requireSettingsAccess(): Promise<SessionUser> {
 }
 
 export async function requireGlobalNavAccess(
-  item: "chat" | "settings" | "admin" | "team" | "vault"
+  item: "chat" | "settings" | "admin" | "team" | "vault" | "inbox" | "knowledge" | "ai-performance" | "dashboards"
 ): Promise<SessionUser> {
   const user = await requireSession();
   if (!canSeeGlobalNav(user.roles, item)) {

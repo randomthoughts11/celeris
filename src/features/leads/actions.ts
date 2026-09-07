@@ -99,6 +99,13 @@ export async function createLeadAction(companyId: string, formData: FormData) {
     });
   }
 
+  try {
+    const { runAutomationsForTrigger } = await import("@/lib/automations/runner");
+    await runAutomationsForTrigger(companyId, "lead_created", { leadId });
+  } catch {
+    // Automations optional — don't block lead create
+  }
+
   revalidateCompany();
   return { success: true };
 }
@@ -119,6 +126,27 @@ export async function updateLeadStatusAction(
     UPDATE leads SET status = ${status}, updated_at = now()
     WHERE id = ${leadId} AND company_id = ${companyId}
   `;
+  await sql`
+    INSERT INTO lead_activities (lead_id, user_id, activity_type, title, description)
+    VALUES (${leadId}, ${user.id}, 'status_change', ${`Status → ${status}`}, null)
+  `;
+  if (status === "won") {
+    try {
+      const { convertLeadToCustomer } = await import("@/lib/db/customers");
+      await convertLeadToCustomer(leadId, companyId, user.id);
+    } catch {
+      // conversion optional if migration not applied yet
+    }
+  }
+  try {
+    const { runAutomationsForTrigger } = await import("@/lib/automations/runner");
+    await runAutomationsForTrigger(companyId, "lead_status_changed", {
+      leadId,
+      status,
+    });
+  } catch {
+    // ignore
+  }
   revalidateCompany();
   return { success: true };
 }

@@ -15,8 +15,10 @@ import {
   updateCompany,
 } from "@/lib/db/companies";
 import { refreshCompanyInsights } from "@/lib/db/ai-insights";
-import { getIntegration, setLookerEmbedUrl } from "@/lib/db/integrations";
-import { parseLookerEmbedUrl } from "@/lib/integrations/looker-studio";
+import {
+  getIntegration,
+  recomputeCompanyAdsMetrics,
+} from "@/lib/db/integrations";
 import { fetchCompanyById } from "@/lib/db/queries";
 import {
   listGoogleAdsCustomers,
@@ -112,15 +114,31 @@ export async function syncCompanyDataAction(companyId: string) {
 
   const google = await getIntegration(companyId, "google_ads");
   const meta = await getIntegration(companyId, "meta_ads");
+  const errors: string[] = [];
+  let googleCount = 0;
+  let metaCount = 0;
 
   if (google?.is_connected && google.config?.customerId) {
-    await syncGoogleAdsCampaigns(companyId, String(google.config.customerId));
+    try {
+      googleCount = await syncGoogleAdsCampaigns(
+        companyId,
+        String(google.config.customerId)
+      );
+    } catch (e) {
+      errors.push(`Google: ${e instanceof Error ? e.message : "sync failed"}`);
+    }
   }
   if (meta?.is_connected && meta.config?.adAccountId) {
-    const adAccountId = String(meta.config.adAccountId);
-    await syncMetaAdsCampaigns(companyId, adAccountId);
-    await syncMetaSocialAccounts(companyId, adAccountId);
+    try {
+      const adAccountId = String(meta.config.adAccountId);
+      metaCount = await syncMetaAdsCampaigns(companyId, adAccountId);
+      await syncMetaSocialAccounts(companyId, adAccountId);
+    } catch (e) {
+      errors.push(`Meta: ${e instanceof Error ? e.message : "sync failed"}`);
+    }
   }
+
+  await recomputeCompanyAdsMetrics(companyId);
 
   const company = await fetchCompanyById(companyId);
   if (company) {
@@ -132,22 +150,34 @@ export async function syncCompanyDataAction(companyId: string) {
   }
 
   revalidateCompany();
-  return { success: true };
+
+  if (errors.length && googleCount === 0 && metaCount === 0) {
+    return { error: errors.join(" · ") };
+  }
+  if (errors.length) {
+    return {
+      success: true,
+      warning: errors.join(" · "),
+      googleCount,
+      metaCount,
+    };
+  }
+  if (
+    !(google?.is_connected && google.config?.customerId) &&
+    !(meta?.is_connected && meta.config?.adAccountId)
+  ) {
+    return {
+      error: "Link a Google or Meta ad account on this brand first.",
+    };
+  }
+  return { success: true, googleCount, metaCount };
 }
 
-export async function dismissInsightAction(insightId: string, companyId: string) {
-  const user = await requireAuth();
-  await requireCompanyAccess(user, companyId);
-  const { dismissAiInsight } = await import("@/lib/db/ai-insights");
-  await dismissAiInsight(insightId, companyId);
-  revalidateCompany();
-  return { success: true };
-}
-
-export async function setLookerEmbedAction(
+export async function linkAdAccountAction(
   companyId: string,
-  provider: "meta_ads" | "google_ads",
-  rawUrl: string
+  provider: "google_ads" | "meta_ads",
+  accountId: string,
+  accountName: string
 ) {
   const user = await requireAuth();
   if (!canManageBrandSetup(user)) {
@@ -155,22 +185,31 @@ export async function setLookerEmbedAction(
   }
   await requireCompanyAccess(user, companyId);
 
-  const trimmed = rawUrl.trim();
-  if (!trimmed) {
-    await setLookerEmbedUrl(companyId, provider, null);
-    revalidateCompany();
-    return { success: true };
+  const id = accountId.trim();
+  if (!id) return { error: "Pick an ad account" };
+
+  if (provider === "google_ads") {
+    await updateCompany(companyId, {
+      googleCustomerId: id,
+      googleCustomerName: accountName || id,
+    });
+  } else {
+    await updateCompany(companyId, {
+      metaAdAccountId: id,
+      metaAdAccountName: accountName || id,
+    });
   }
 
-  const embedUrl = parseLookerEmbedUrl(trimmed);
-  if (!embedUrl) {
-    return {
-      error:
-        "Invalid Looker Studio embed URL. Use the link from File → Embed report.",
-    };
-  }
+  const sync = await syncCompanyDataAction(companyId);
+  revalidateApp();
+  return sync;
+}
 
-  await setLookerEmbedUrl(companyId, provider, embedUrl);
+export async function dismissInsightAction(insightId: string, companyId: string) {
+  const user = await requireAuth();
+  await requireCompanyAccess(user, companyId);
+  const { dismissAiInsight } = await import("@/lib/db/ai-insights");
+  await dismissAiInsight(insightId, companyId);
   revalidateCompany();
   return { success: true };
 }

@@ -7,13 +7,18 @@ import { UserButton } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
+  BookOpen,
+  Bot,
   Building2,
   Calendar,
   ChevronDown,
+  GitBranch,
   HardDrive,
+  Inbox,
   Kanban,
   KeyRound,
   LayoutDashboard,
+  MapPin,
   Megaphone,
   Menu,
   MessageSquare,
@@ -22,8 +27,11 @@ import {
   Share2,
   Shield,
   Target,
+  UserCircle2,
   Users,
+  Workflow,
   X,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/types";
@@ -36,7 +44,7 @@ import {
 import {
   canSeeCompanyNavItem,
   canSeeGlobalNav,
-  isTelecallerFocused,
+  isDeskFocused,
 } from "@/lib/rbac/nav";
 import { NotificationsBell } from "@/components/layout/notifications-bell";
 import { ClockWidget } from "@/components/workforce/clock-widget";
@@ -45,8 +53,17 @@ import { resolveCompanyNameAction } from "@/features/companies/actions";
 const companyNav = [
   { key: "overview" as const, href: "", label: "Overview", icon: LayoutDashboard, group: "work" as const },
   { key: "board" as const, href: "/board", label: "Board", icon: Kanban, group: "work" as const },
-  { key: "leads" as const, href: "/leads", label: "Inbox", icon: Users, group: "work" as const },
-  { key: "calls" as const, href: "/calls", label: "Calls", icon: Phone, group: "work" as const },
+  { key: "leads" as const, href: "/leads", label: "Leads", icon: Users, group: "crm" as const },
+  { key: "pipeline" as const, href: "/pipeline", label: "Pipeline", icon: GitBranch, group: "crm" as const },
+  { key: "customers" as const, href: "/customers", label: "Customers", icon: UserCircle2, group: "crm" as const },
+  { key: "appointments" as const, href: "/appointments", label: "Bookings", icon: Calendar, group: "crm" as const },
+  { key: "calls" as const, href: "/calls", label: "Calls", icon: Phone, group: "crm" as const },
+  { key: "ai-calls" as const, href: "/ai-calls", label: "AI Calls", icon: Bot, group: "crm" as const },
+  { key: "messages" as const, href: "/messages", label: "Messages", icon: Inbox, group: "crm" as const },
+  { key: "branches" as const, href: "/branches", label: "Branches", icon: MapPin, group: "ops" as const },
+  { key: "knowledge" as const, href: "/knowledge", label: "Knowledge", icon: BookOpen, group: "ops" as const },
+  { key: "automations" as const, href: "/automations", label: "Automations", icon: Workflow, group: "ops" as const },
+  { key: "dashboards" as const, href: "/dashboards", label: "Dashboards", icon: Zap, group: "ops" as const },
   { key: "publish" as const, href: "/publish", label: "Publish", icon: Calendar, group: "work" as const },
   { key: "drive" as const, href: "/drive", label: "Drive", icon: HardDrive, group: "work" as const },
   { key: "social" as const, href: "/social", label: "Social", icon: Share2, group: "work" as const },
@@ -98,7 +115,7 @@ function NavChip({
 export function AppShell({ user, children }: AppShellProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const telecallerMode = isTelecallerFocused(user.roles);
+  const telecallerMode = isDeskFocused(user.roles);
   const homeHref = telecallerMode ? "/telecaller" : "/";
   const isHome = pathname === "/" || pathname === "/telecaller";
   const companySlug = pathname.match(/^\/companies\/([^/]+)/)?.[1];
@@ -136,6 +153,8 @@ export function AppShell({ user, children }: AppShellProps) {
     canSeeCompanyNavItem(user.roles, item.key)
   );
   const workNav = visibleCompanyNav.filter((item) => item.group === "work");
+  const crmNav = visibleCompanyNav.filter((item) => item.group === "crm");
+  const opsNav = visibleCompanyNav.filter((item) => item.group === "ops");
   const adsNav = visibleCompanyNav.filter((item) => item.group === "ads");
 
   const globalNav = [
@@ -145,6 +164,10 @@ export function AppShell({ user, children }: AppShellProps) {
       label: telecallerMode ? "Desk" : "Brands",
       icon: Building2,
     },
+    { key: "inbox" as const, href: "/inbox", label: "Inbox", icon: Inbox },
+    { key: "dashboards" as const, href: "/dashboards", label: "Dashboards", icon: Zap },
+    { key: "knowledge" as const, href: "/knowledge", label: "Knowledge", icon: BookOpen },
+    { key: "ai-performance" as const, href: "/ai-performance", label: "AI Perf", icon: Bot },
     { key: "chat" as const, href: "/chat", label: "Chat", icon: MessageSquare },
     { key: "vault" as const, href: "/vault", label: "Vault", icon: KeyRound },
     ...(showTeam
@@ -155,7 +178,21 @@ export function AppShell({ user, children }: AppShellProps) {
       ? [{ key: "admin" as const, href: "/admin", label: "Admin", icon: Shield }]
       : []),
   ].filter(
-    (item) => item.key === "home" || canSeeGlobalNav(user.roles, item.key)
+    (item) =>
+      item.key === "home" ||
+      canSeeGlobalNav(
+        user.roles,
+        item.key as
+          | "chat"
+          | "settings"
+          | "admin"
+          | "team"
+          | "vault"
+          | "inbox"
+          | "knowledge"
+          | "ai-performance"
+          | "dashboards"
+      )
   );
 
   return (
@@ -180,10 +217,10 @@ export function AppShell({ user, children }: AppShellProps) {
 
             <Link href={homeHref} className="flex shrink-0 items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-blue-600">
-                <span className="text-sm font-bold text-white">A</span>
+                <span className="text-sm font-bold text-white">V</span>
               </div>
               <span className="hidden font-semibold tracking-tight sm:inline">
-                Agency OS
+                Vande AI CRM
               </span>
             </Link>
 
@@ -312,6 +349,22 @@ export function AppShell({ user, children }: AppShellProps) {
                 basePath={basePath}
                 pathname={pathname}
               />
+              {crmNav.length > 0 && (
+                <CompanyTabGroup
+                  label="CRM"
+                  items={crmNav}
+                  basePath={basePath}
+                  pathname={pathname}
+                />
+              )}
+              {opsNav.length > 0 && (
+                <CompanyTabGroup
+                  label="Ops"
+                  items={opsNav}
+                  basePath={basePath}
+                  pathname={pathname}
+                />
+              )}
               {adsNav.length > 0 && (
                 <CompanyTabGroup
                   label="Ads"

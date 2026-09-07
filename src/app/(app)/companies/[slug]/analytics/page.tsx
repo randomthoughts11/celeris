@@ -10,6 +10,7 @@ import {
 } from "@/features/companies/company-data";
 import { getCompanyBySlug } from "@/features/companies/queries";
 import { requireCompanyPageAccess } from "@/lib/auth/page-guards";
+import { getCampaignAttributionSummary } from "@/lib/db/attribution";
 import { formatCurrency, formatRoas } from "@/lib/format";
 
 interface PageProps {
@@ -23,12 +24,13 @@ export default async function AnalyticsPage({ params }: PageProps) {
   if (!company) notFound();
 
   const metrics = company.metrics;
-  const [snapshots, googleCampaigns, metaCampaigns, insights] =
+  const [snapshots, googleCampaigns, metaCampaigns, insights, campaignAttribution] =
     await Promise.all([
       getPerformanceSnapshots(company.id),
       getGoogleAdsCampaigns(company.id),
       getMetaAdsCampaigns(company.id),
       getAiInsights(company.id),
+      getCampaignAttributionSummary(company.id).catch(() => []),
     ]);
 
   const allCampaigns = [
@@ -49,8 +51,7 @@ export default async function AnalyticsPage({ params }: PageProps) {
           Marketing Analytics
         </h1>
         <p className="text-muted-foreground">
-          Cross-channel CRM snapshots. When Looker is connected on Google/Meta
-          Ads, treat those reports as the live source of truth.
+          Google and Meta campaign totals from the last sync — last 30 days.
         </p>
       </div>
 
@@ -113,6 +114,41 @@ export default async function AnalyticsPage({ params }: PageProps) {
           dataKey="conversions"
         />
       </div>
+
+      {campaignAttribution.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium">Campaign attribution</h2>
+          <div className="overflow-x-auto rounded-xl border border-white/10">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-white/10 text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2">Campaign</th>
+                  <th className="px-3 py-2">Platform</th>
+                  <th className="px-3 py-2">Leads</th>
+                  <th className="px-3 py-2">Customers</th>
+                  <th className="px-3 py-2">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {campaignAttribution.map((row) => (
+                  <tr
+                    key={`${row.platform}:${row.campaign}`}
+                    className="border-b border-white/5"
+                  >
+                    <td className="px-3 py-2 font-medium">{row.campaign}</td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {row.platform}
+                    </td>
+                    <td className="px-3 py-2">{row.leads}</td>
+                    <td className="px-3 py-2">{row.customers}</td>
+                    <td className="px-3 py-2">{formatCurrency(row.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {budgetInsights.length > 0 && (
         <AiInsightsPanel insights={budgetInsights} companyId={company.id} />

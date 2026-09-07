@@ -1,14 +1,29 @@
-import { createHash, timingSafeEqual } from "crypto";
+import { createHash, createHmac, timingSafeEqual } from "crypto";
 import { getSql } from "@/lib/db/client";
 
+/** Timing-safe secret compare. Fail-closed if either side missing. */
 export function verifyWebhookSecret(
-  provided: string | null,
-  expected: string | undefined
+  provided: string | null | undefined,
+  expected: string | null | undefined
 ): boolean {
   if (!expected || !provided) return false;
   const a = createHash("sha256").update(provided).digest();
   const b = createHash("sha256").update(expected).digest();
   return timingSafeEqual(a, b);
+}
+
+/** Meta `X-Hub-Signature-256: sha256=<hex>` check. Fail-closed if secret/header missing. */
+export function verifyMetaHubSignature(
+  rawBody: string,
+  signatureHeader: string | null,
+  appSecret: string | undefined
+): boolean {
+  if (!appSecret || !signatureHeader) return false;
+  const provided = signatureHeader.startsWith("sha256=")
+    ? signatureHeader.slice(7)
+    : signatureHeader;
+  const expected = createHmac("sha256", appSecret).update(rawBody).digest("hex");
+  return verifyWebhookSecret(provided, expected);
 }
 
 function normalizePhone(phone: string): string {

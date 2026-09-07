@@ -26,7 +26,11 @@ export function SyncCompanyButton({ companyId }: { companyId: string }) {
               toast.error(result.error);
               return;
             }
-            toast.success("Data synced from Google & Meta");
+            if (result && "warning" in result && result.warning) {
+              toast.warning(result.warning);
+            } else {
+              toast.success("Campaigns synced from Google & Meta");
+            }
             router.refresh();
           } catch {
             toast.error("Sync failed — check Settings integrations");

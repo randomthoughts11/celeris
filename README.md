@@ -1,20 +1,41 @@
-# Agency OS (Celeris CRM)
+# Vande AI CRM
 
-AI-native CRM and operating system for digital marketing agencies. Built with Next.js, Clerk, Neon PostgreSQL, and a dark-first UI.
+AI-native multi-brand CRM built on the Agency OS stack (Next.js, Clerk, Neon PostgreSQL, dark-first UI).
 
 ## Features
 
-- **Company Hub** — Create clients, link Google/Meta ad accounts, health metrics
-- **Executive Dashboard** — Operations, CRM metrics, goals
-- **Google Ads & Meta Ads** — Campaign sync, Looker embeds, rule-based alerts
-- **Social Media** — Cross-platform metrics from Meta-connected pages
-- **Publish** — Shortcuts to native platform publishers (in-app scheduling is not included)
-- **Lead Inbox** — Privyr-style workflow with call/WhatsApp quick actions
-- **Privyr sync** — Per-company webhook tokens + CSV import
-- **Board** — Kanban with create and status updates
-- **Team Chat** — Company rooms and DMs with coworkers
-- **Admin** — User approval, roles, company assignment
-- **RBAC** — God Mode, Admin, Manager, Designer, Telecaller
+### Core CRM
+- **Brands (companies)** with multi-branch locations
+- **Lead inbox & sales pipeline** with stages, follow-ups, activity timeline
+- **Customers** (converted won leads + manual entry) with attribution
+- **Manual call logging** + RingCentral webhooks
+- **Board / Deck** kanban, tasks, Drive, team chat, vault
+
+### AI Calling (ElevenLabs)
+- Outbound AI calls, inbound webhook tracking, transcripts, scoring, transfer to human
+- AI vs human performance dashboard (`/ai-performance`)
+
+### Booking & conversion (Wix + Twilio)
+- Appointments, booking/payment links, SMS notifications, website conversion events
+
+### Marketing
+- Google Ads & Meta Ads sync (campaign + Meta ad set/ad depth)
+- Attribution links (campaign → lead/customer → revenue)
+- Branch-level marketing performance
+
+### Messaging
+- Unified inbox (`/inbox` + brand Messages): website chat, email, Meta DMs
+- AI reply suggestions (OpenAI-compatible)
+
+### Knowledge & automations
+- Knowledge base / playbooks / objection library
+- Automation rules, follow-up sequences, appointment reminders, missed-call hooks
+- Webhook endpoint management + cron `/api/cron/automations`
+
+### Dashboards & admin
+- Personalized widget layout builder (brand + global)
+- Roles: God Mode, Admin, Manager, Designer, Salesperson, Telecaller
+- Custom fields, audit log surface, integration status in Settings
 
 ## Tech Stack
 
@@ -23,27 +44,24 @@ AI-native CRM and operating system for digital marketing agencies. Built with Ne
 | Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4, shadcn/ui |
 | Auth | Clerk |
 | Database | Neon PostgreSQL |
-| Integrations | Google Ads, Meta Marketing API, Google Drive |
+| Integrations | Google Ads, Meta, Drive, ElevenLabs, Wix, Twilio, Resend/OpenAI |
 | Hosting | Vercel |
 
 ## Quick Start
 
 ```bash
 npm install
-cp .env.example .env.local
-# Fill in DATABASE_URL, Clerk keys, integration credentials
+# Fill DATABASE_URL + Clerk keys in .env (see commented groups for new integrations)
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Requires Clerk + Neon configured.
-
-## Database migrations
+Apply DB migrations:
 
 ```bash
-node scripts/migrate.mjs
+node scripts/migrate.mjs          # 001-005
+node scripts/apply-006.mjs …      # through
+node scripts/apply-012.mjs        # Vande AI CRM schema
 ```
-
-Migrations live in `neon/migrations/` (001–005).
 
 ## Scripts
 
@@ -61,8 +79,6 @@ Migrations live in `neon/migrations/` (001–005).
 - [Google Drive](docs/GOOGLE_DRIVE.md)
 - [Developer Guide](docs/DEVELOPER.md)
 
-Set `DEMO_MODE=true` only for local seed browsing without Clerk. Missing secrets do not open the app.
-
 ## License
 
-Private — All rights reserved.
+Private - All rights reserved.

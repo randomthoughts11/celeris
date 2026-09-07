@@ -28,6 +28,7 @@ const BASE_ASSIGNABLE_ROLES: UserRole[] = [
   "admin",
   "manager",
   "designer",
+  "salesperson",
   "telecaller",
 ];
 

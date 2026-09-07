@@ -1,10 +1,12 @@
 import { google } from "googleapis";
-import { encrypt, decrypt, signOAuthState } from "@/lib/crypto";
+import { signOAuthState } from "@/lib/crypto";
 import {
   getAgencyTokens,
   upsertAgencyCredential,
   isAgencyConnected,
 } from "@/lib/db/agency-credentials";
+import { markIntegrationSynced } from "@/lib/db/integrations";
+import { foldGoogleCampaignRows } from "@/lib/integrations/ads-metrics";
 import type { AgencyAdAccount } from "@/types";
 import { getGoogleOAuthEnv, isGoogleAdsApiConfigured } from "@/lib/config/google-oauth";
 
@@ -175,7 +177,10 @@ export async function listGoogleAdsCustomers(): Promise<AgencyAdAccount[]> {
   return accounts;
 }
 
-export async function syncGoogleAdsCampaigns(companyId: string, customerId: string): Promise<number> {
+export async function syncGoogleAdsCampaigns(
+  companyId: string,
+  customerId: string
+): Promise<number> {
   const accessToken = await getGoogleAccessToken();
   const developerToken = getGoogleOAuthEnv().developerToken!;
 
@@ -187,8 +192,7 @@ export async function syncGoogleAdsCampaigns(companyId: string, customerId: stri
       body: JSON.stringify({
         query: `SELECT campaign.id, campaign.name, campaign.status,
           campaign_budget.amount_micros, metrics.cost_micros, metrics.clicks,
-          metrics.impressions, metrics.ctr, metrics.average_cpc, metrics.conversions,
-          metrics.cost_per_conversion, metrics.conversions_value
+          metrics.impressions, metrics.conversions, metrics.conversions_value
           FROM campaign
           WHERE campaign.status != 'REMOVED'
             AND segments.date DURING LAST_30_DAYS`,
@@ -208,9 +212,9 @@ export async function syncGoogleAdsCampaigns(companyId: string, customerId: stri
     }>;
   };
 
+  const campaigns = foldGoogleCampaignRows(data.results ?? []);
   const { getSql } = await import("@/lib/db/client");
   const sql = getSql();
-  let count = 0;
 
   const statusMap: Record<string, string> = {
     ENABLED: "active",
@@ -218,53 +222,45 @@ export async function syncGoogleAdsCampaigns(companyId: string, customerId: stri
     REMOVED: "ended",
   };
 
-  for (const row of data.results ?? []) {
-    const c = row.campaign;
-    if (!c?.id) continue;
-    const m = row.metrics ?? {};
-    const budget = Number(row.campaignBudget?.amountMicros ?? 0) / 1_000_000;
-    const spend = Number(m.costMicros ?? 0) / 1_000_000;
-    const convValue = Number(m.conversionsValue ?? 0);
-    const roas = spend > 0 ? convValue / spend : 0;
-
+  for (const c of campaigns) {
     await sql`
       INSERT INTO google_ads_campaigns (
         company_id, external_id, name, status, budget, daily_spend,
         remaining_budget, clicks, impressions, ctr, cpc, conversions,
         cost_per_conversion, roas, synced_at
       ) VALUES (
-        ${companyId}, ${c.id}, ${c.name ?? "Campaign"},
-        ${statusMap[c.status ?? "ENABLED"] ?? "active"},
-        ${budget}, ${spend}, ${Math.max(0, budget - spend)},
-        ${Number(m.clicks ?? 0)}, ${Number(m.impressions ?? 0)},
-        ${Number(m.ctr ?? 0)}, ${Number(m.averageCpc ?? 0) / 1_000_000},
-        ${Number(m.conversions ?? 0)}, ${Number(m.costPerConversion ?? 0) / 1_000_000},
-        ${roas}, now()
+        ${companyId}, ${c.id}, ${c.name},
+        ${statusMap[c.status] ?? "active"},
+        ${c.dailyBudget}, ${c.spend}, ${Math.max(0, c.dailyBudget)},
+        ${c.clicks}, ${c.impressions},
+        ${c.ctr}, ${c.cpc},
+        ${c.conversions}, ${c.costPerConversion},
+        ${c.roas}, now()
       )
       ON CONFLICT (company_id, external_id) DO UPDATE SET
         name = EXCLUDED.name, status = EXCLUDED.status,
         budget = EXCLUDED.budget, daily_spend = EXCLUDED.daily_spend,
+        remaining_budget = EXCLUDED.remaining_budget,
         clicks = EXCLUDED.clicks, impressions = EXCLUDED.impressions,
         ctr = EXCLUDED.ctr, cpc = EXCLUDED.cpc, conversions = EXCLUDED.conversions,
+        cost_per_conversion = EXCLUDED.cost_per_conversion,
         roas = EXCLUDED.roas, synced_at = now()
     `;
-    count++;
   }
 
-  const totalSpend = (data.results ?? []).reduce(
-    (sum, r) => sum + Number(r.metrics?.costMicros ?? 0) / 1_000_000,
-    0
-  );
-  await sql`
-    UPDATE company_metrics SET
-      monthly_ad_spend = ${totalSpend},
-      ad_spend = ${totalSpend},
-      active_campaigns = ${count},
-      updated_at = now()
-    WHERE company_id = ${companyId}
-  `;
+  const keepGoogleIds = campaigns.map((c) => c.id);
+  if (keepGoogleIds.length > 0) {
+    await sql`
+      DELETE FROM google_ads_campaigns
+      WHERE company_id = ${companyId}
+        AND NOT (external_id = ANY(${keepGoogleIds}))
+    `;
+  } else {
+    await sql`DELETE FROM google_ads_campaigns WHERE company_id = ${companyId}`;
+  }
 
-  return count;
+  await markIntegrationSynced(companyId, "google_ads");
+  return campaigns.length;
 }
 
 export async function provisionDriveFoldersForCompany(

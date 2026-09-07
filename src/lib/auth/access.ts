@@ -78,7 +78,7 @@ export function canViewAuditLogs(user: SessionUser): boolean {
 
 export function shouldScopeLeadsToOwner(roles: UserRole[]): boolean {
   return (
-    hasRole(roles, "telecaller") &&
+    (hasRole(roles, "telecaller") || hasRole(roles, "salesperson")) &&
     !hasAnyRole(roles, ["god_mode", "admin", "manager"])
   );
 }
