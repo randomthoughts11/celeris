@@ -31,9 +31,7 @@ export function getMetaAgencyAuthUrl(userId: string): string {
     "ads_management",
     "pages_read_engagement",
     "pages_messaging",
-    "instagram_manage_messages",
     "business_management",
-    "instagram_basic",
   ].join(",");
   const state = signOAuthState({ provider: "meta", userId });
   return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&state=${state}&response_type=code`;
