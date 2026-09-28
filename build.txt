@@ -1,6 +1,30 @@
 Celeris CRM — Build Log
 =======================
 
+2026-09-28 — Light redesign, Drop, Meta ads brain
+------------------------------------------------
+UI / product
+- Light Jira-style theme with blue accent; app renamed to Celeris CRM everywhere users see it.
+- Drop: encrypted file + note sharing with public /d/ links (migration 013_drops.sql).
+- All-tasks page across brands (Tasks in global nav).
+- Looker Studio embeds removed from Meta Ads and Google Ads pages.
+
+Meta Ads
+- Agency Meta connected; Vande Wellness US linked to ad account 1316467713399824 and synced.
+- Explainable audit per campaign / ad set / ad (src/lib/ads/audit.ts): score + label + plain-English
+  findings (no delivery, spend with no results, CPL vs account average, low CTR, high frequency).
+- Ads explorer: level toggle, status filter, "only with spend", search, sort (spend, results, CPL, CTR, worst audit).
+- Ads brain (src/lib/ads/brain.ts): GPT-4.1 media buyer ranks up to 8 decisions from a live snapshot,
+  answers free-text questions, saved to ai_insights (module meta_ads_brain).
+- "Pause in Meta" applies a pause decision on the live account (confirm + brand ownership check).
+- Daily cron /api/cron/ads-brain at 07:00 IST re-analyses every linked brand (vercel.json, CRON_SECRET).
+
+Fixes / security
+- Settings 500: INTEGRATION_ENCRYPTION_KEY added to Vercel production.
+- New signups can no longer claim God mode (tenant_owner only when no god_mode exists).
+- Dropped Instagram OAuth scopes Meta rejects.
+- Linked-account card layout fixed (left side was empty).
+
 2026-08-17 — Work desk UI + auth hard-close
 ------------------------------------------
 - Home: greeting, brand search, Inbox/Board/Publish shortcuts on each card.
