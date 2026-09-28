@@ -25,7 +25,7 @@ function GpsLink({
       href={mapsLink(lat, lng)}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-xs text-violet-400 hover:underline"
+      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
     >
       <MapPin className="h-3 w-3" />
       {label}
@@ -52,8 +52,8 @@ export function TeamAttendancePanel({ active, recent }: TeamAttendancePanelProps
     <section className="space-y-4">
       <h2 className="text-lg font-semibold">Attendance &amp; GPS</h2>
 
-      <Card className="border-white/5 bg-white/[0.02] p-5">
-        <h3 className="mb-3 text-sm font-medium text-emerald-400">
+      <Card className="border-border bg-card p-5">
+        <h3 className="mb-3 text-sm font-medium text-emerald-600">
           Clocked in now ({active.length})
         </h3>
         {active.length === 0 ? (
@@ -63,7 +63,7 @@ export function TeamAttendancePanel({ active, recent }: TeamAttendancePanelProps
             {active.map((shift) => (
               <li
                 key={shift.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/5 p-3"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-3"
               >
                 <div>
                   <p className="font-medium">{shift.user_name}</p>
@@ -82,11 +82,11 @@ export function TeamAttendancePanel({ active, recent }: TeamAttendancePanelProps
         )}
       </Card>
 
-      <Card className="overflow-hidden border-white/5 bg-white/[0.02]">
-        <div className="border-b border-white/5 px-5 py-3">
+      <Card className="overflow-hidden border-border bg-card">
+        <div className="border-b border-border px-5 py-3">
           <h3 className="text-sm font-medium">Recent shifts</h3>
         </div>
-        <ul className="divide-y divide-white/5">
+        <ul className="divide-y divide-border">
           {recent.map((shift) => (
             <li key={shift.id} className="flex flex-wrap gap-4 p-4 text-sm">
               <div className="min-w-[140px]">
@@ -101,7 +101,7 @@ export function TeamAttendancePanel({ active, recent }: TeamAttendancePanelProps
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{shiftDuration(shift)}</Badge>
                 {!shift.clock_out_at && (
-                  <Badge className="bg-emerald-500/20 text-emerald-300">Active</Badge>
+                  <Badge className="bg-emerald-500/20 text-emerald-700">Active</Badge>
                 )}
               </div>
               <div className="flex flex-wrap gap-3">

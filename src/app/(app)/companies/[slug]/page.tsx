@@ -52,7 +52,7 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-violet-400">
+          <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
             Brand desk
           </p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">
@@ -123,7 +123,7 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm">
+        <Card className="border-border bg-card p-6 backdrop-blur-sm">
           <h3 className="mb-4 font-semibold">Monthly goals</h3>
           <div className="space-y-6">
             <div>
@@ -162,7 +162,7 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
           </div>
         </Card>
 
-        <Card className="flex flex-col justify-between border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm">
+        <Card className="flex flex-col justify-between border-border bg-card p-6 backdrop-blur-sm">
           <div>
             <h3 className="font-semibold">
               {showFinancials ? "Performance lives next door" : "Delivery, not dashboards"}

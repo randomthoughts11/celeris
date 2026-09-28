@@ -49,7 +49,7 @@ function Card({
   className?: string;
 }) {
   return (
-    <div className={`rounded-xl border border-white/10 bg-white/[0.03] p-4 ${className}`}>
+    <div className={`rounded-xl border border-border bg-card p-4 ${className}`}>
       {children}
     </div>
   );
@@ -75,8 +75,8 @@ function Btn({
       onClick={onClick}
       className={
         variant === "primary"
-          ? "rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-500 disabled:opacity-50"
-          : "rounded-lg border border-white/10 px-3 py-1.5 text-sm text-muted-foreground hover:bg-white/5 disabled:opacity-50"
+          ? "rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
+          : "rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-50"
       }
     >
       {children}
@@ -85,7 +85,7 @@ function Btn({
 }
 
 const inputCls =
-  "w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none focus:border-violet-500";
+  "w-full rounded-lg border border-border bg-black/20 px-3 py-2 text-sm outline-none focus:border-blue-500";
 
 // ── Branches ───────────────────────────────────────────────────────────────
 export function BranchesClient({
@@ -211,9 +211,9 @@ export function CustomersClient({
           </div>
         </Card>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-white/10">
+      <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-white/10 text-xs text-muted-foreground">
+          <thead className="border-b border-border text-xs text-muted-foreground">
             <tr>
               <th className="px-3 py-2">Name</th>
               <th className="px-3 py-2">Contact</th>
@@ -223,7 +223,7 @@ export function CustomersClient({
           </thead>
           <tbody>
             {customers.map((c) => (
-              <tr key={c.id} className="border-b border-white/5">
+              <tr key={c.id} className="border-b border-border">
                 <td className="px-3 py-2">
                   {c.first_name} {c.last_name}
                 </td>
@@ -274,7 +274,7 @@ export function PipelineClient({
         return (
           <div
             key={stage}
-            className="w-64 shrink-0 rounded-xl border border-white/10 bg-white/[0.02] p-3"
+            className="w-64 shrink-0 rounded-xl border border-border bg-card p-3"
           >
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -286,14 +286,14 @@ export function PipelineClient({
               {col.map((l) => (
                 <div
                   key={l.id}
-                  className="rounded-lg border border-white/10 bg-black/20 p-2 text-sm"
+                  className="rounded-lg border border-border bg-black/20 p-2 text-sm"
                 >
                   <p className="font-medium">
                     {l.first_name} {l.last_name}
                   </p>
                   <p className="text-xs text-muted-foreground">{l.source || "—"}</p>
                   <select
-                    className="mt-2 w-full rounded border border-white/10 bg-transparent px-1 py-1 text-xs"
+                    className="mt-2 w-full rounded border border-border bg-transparent px-1 py-1 text-xs"
                     value={l.status}
                     disabled={pending}
                     onChange={(e) =>
@@ -330,12 +330,12 @@ export function PipelineClient({
                     <input
                       name="title"
                       placeholder="Follow-up"
-                      className="w-full rounded border border-white/10 bg-transparent px-1 py-1 text-xs"
+                      className="w-full rounded border border-border bg-transparent px-1 py-1 text-xs"
                     />
                     <input
                       name="followUpAt"
                       type="datetime-local"
-                      className="w-full rounded border border-white/10 bg-transparent px-1 py-1 text-xs"
+                      className="w-full rounded border border-border bg-transparent px-1 py-1 text-xs"
                     />
                     <Btn type="submit" variant="ghost" disabled={pending}>
                       Add follow-up
@@ -404,7 +404,7 @@ export function AppointmentsClient({
                 {new Date(a.starts_at).toLocaleString()} · {a.status} · ₹{a.amount}
               </p>
               {(a.booking_url || a.payment_url) && (
-                <p className="mt-1 text-xs text-violet-400">
+                <p className="mt-1 text-xs text-blue-600">
                   {a.booking_url && (
                     <a href={a.booking_url} target="_blank" rel="noreferrer" className="mr-3 underline">
                       Booking link
@@ -419,7 +419,7 @@ export function AppointmentsClient({
               )}
             </div>
             <select
-              className="rounded border border-white/10 bg-transparent px-2 py-1 text-xs"
+              className="rounded border border-border bg-transparent px-2 py-1 text-xs"
               value={a.status}
               disabled={pending}
               onChange={(e) =>
@@ -586,7 +586,7 @@ export function MessagesClient({
               });
             }}
             className={`block w-full rounded-lg px-2 py-2 text-left text-sm ${
-              activeId === c.id ? "bg-white/10" : "hover:bg-white/5"
+              activeId === c.id ? "bg-muted" : "hover:bg-muted"
             }`}
           >
             <p className="font-medium">{c.participant_name || c.subject || c.channel}</p>
@@ -600,18 +600,18 @@ export function MessagesClient({
             <div
               key={m.id}
               className={`rounded-lg px-3 py-2 text-sm ${
-                m.direction === "outbound" ? "ml-8 bg-violet-600/20" : "mr-8 bg-white/5"
+                m.direction === "outbound" ? "ml-8 bg-blue-600/20" : "mr-8 bg-card"
               }`}
             >
               {m.body}
               {m.ai_generated && (
-                <span className="ml-2 text-[10px] text-violet-400">AI</span>
+                <span className="ml-2 text-[10px] text-blue-600">AI</span>
               )}
             </div>
           ))}
         </div>
         {activeId && (
-          <div className="mt-3 flex flex-wrap gap-2 border-t border-white/10 pt-3">
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
             <input
               value={body}
               onChange={(e) => setBody(e.target.value)}
@@ -694,7 +694,7 @@ export function KnowledgeClient({
       <div className="grid gap-3 md:grid-cols-2">
         {docs.map((d) => (
           <Card key={d.id}>
-            <p className="text-xs uppercase text-violet-400">{d.doc_type}</p>
+            <p className="text-xs uppercase text-blue-600">{d.doc_type}</p>
             <h3 className="font-medium">{d.title}</h3>
             <p className="mt-2 line-clamp-4 text-sm text-muted-foreground">{d.content}</p>
           </Card>

@@ -48,7 +48,7 @@ export function CompanyTasksPanel({
   ).length;
 
   return (
-    <Card className="border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm">
+    <Card className="border-border bg-card p-6 backdrop-blur-sm">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h3 className="font-semibold">
@@ -68,7 +68,7 @@ export function CompanyTasksPanel({
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
-        <div className="flex rounded-lg border border-white/10 p-0.5">
+        <div className="flex rounded-lg border border-border p-0.5">
           <Chip active={scope === "mine"} onClick={() => setScope("mine")}>
             My tasks
           </Chip>
@@ -76,7 +76,7 @@ export function CompanyTasksPanel({
             Team tasks
           </Chip>
         </div>
-        <div className="flex rounded-lg border border-white/10 p-0.5">
+        <div className="flex rounded-lg border border-border p-0.5">
           <Chip active={status === "open"} onClick={() => setStatus("open")}>
             Open
           </Chip>
@@ -109,10 +109,10 @@ export function CompanyTasksPanel({
             return (
               <li
                 key={task.id}
-                className="flex items-start gap-3 rounded-lg border border-white/5 bg-white/[0.02] p-3"
+                className="flex items-start gap-3 rounded-lg border border-border bg-card p-3"
               >
                 {task.status === "done" ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 ) : (
                   <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
@@ -132,7 +132,7 @@ export function CompanyTasksPanel({
                       <span
                         className={cn(
                           "flex items-center gap-1",
-                          isOverdue && "text-amber-400"
+                          isOverdue && "text-orange-600"
                         )}
                       >
                         <Clock className="h-3 w-3" />
@@ -166,7 +166,7 @@ function Chip({
       className={cn(
         "rounded-md px-2.5 py-1 text-xs transition-colors",
         active
-          ? "bg-white/15 text-foreground"
+          ? "bg-muted text-foreground"
           : "text-muted-foreground hover:text-foreground"
       )}
     >

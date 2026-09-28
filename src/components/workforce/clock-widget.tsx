@@ -131,8 +131,8 @@ export function ClockWidget() {
             variant="outline"
             size="sm"
             className={cn(
-              "gap-2 border-white/10",
-              isIn && "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+              "gap-2 border-border",
+              isIn && "border-emerald-500/40 bg-emerald-500/10 text-emerald-700"
             )}
           >
             <Clock className="h-3.5 w-3.5" />
@@ -158,7 +158,7 @@ export function ClockWidget() {
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : isIn && shift ? (
             <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm">
-              <p className="font-medium text-emerald-300">Currently clocked in</p>
+              <p className="font-medium text-emerald-700">Currently clocked in</p>
               <p className="mt-2 text-sm">
                 <span className="text-muted-foreground">Login: </span>
                 {format(new Date(shift.clock_in_at), "EEE, MMM d · h:mm a")}
@@ -172,7 +172,7 @@ export function ClockWidget() {
                     href={`https://maps.google.com/?q=${shift.clock_in_latitude},${shift.clock_in_longitude}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 flex items-center gap-1 text-xs text-violet-400 hover:underline"
+                    className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:underline"
                   >
                     <MapPin className="h-3 w-3" />
                     View clock-in location
@@ -219,7 +219,7 @@ export function ClockWidget() {
                 {history.map((s) => (
                   <li
                     key={s.id}
-                    className="rounded-md border border-white/5 bg-white/[0.02] px-3 py-2 text-xs"
+                    className="rounded-md border border-border bg-card px-3 py-2 text-xs"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span>

@@ -52,7 +52,7 @@ export function LookerReportSettings({
   };
 
   return (
-    <Card className="border-white/5 bg-white/[0.02] p-4">
+    <Card className="border-border bg-card p-4">
       <form onSubmit={save} className="space-y-3">
         <div className="flex items-center gap-2">
           <Link2 className="h-4 w-4 text-muted-foreground" />

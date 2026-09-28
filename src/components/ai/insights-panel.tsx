@@ -38,12 +38,12 @@ export function AiInsightsPanel({ insights, companyId }: AiInsightsPanelProps) {
   };
 
   return (
-    <Card className="border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm">
+    <Card className="border-border bg-card p-6 backdrop-blur-sm">
       <div className="mb-4 flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-violet-400" />
+        <Sparkles className="h-4 w-4 text-blue-600" />
         <h3 className="font-semibold">Smart alerts</h3>
         <span className="text-xs text-muted-foreground">Rules-based</span>
-        <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-xs text-violet-300">
+        <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-700">
           {insights.length} active
         </span>
       </div>
@@ -89,7 +89,7 @@ export function AiInsightsPanel({ insights, companyId }: AiInsightsPanelProps) {
                   {insight.action_link && insight.action_label && (
                     <Link
                       href={insight.action_link}
-                      className="inline-flex h-8 items-center gap-1 px-2 text-sm text-violet-400 hover:text-violet-300"
+                      className="inline-flex h-8 items-center gap-1 px-2 text-sm text-blue-600 hover:text-blue-700"
                     >
                       {insight.action_label}
                       <ArrowRight className="h-3 w-3" />

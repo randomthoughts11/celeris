@@ -13,11 +13,11 @@ export default async function PendingApprovalPage({
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
-      <Card className="max-w-md border-white/10 bg-white/[0.02] p-8 text-center">
+      <Card className="max-w-md border-border bg-card p-8 text-center">
         {isRejected ? (
           <ShieldX className="mx-auto mb-4 h-12 w-12 text-destructive" />
         ) : (
-          <Clock className="mx-auto mb-4 h-12 w-12 text-violet-400" />
+          <Clock className="mx-auto mb-4 h-12 w-12 text-blue-600" />
         )}
         <h1 className="text-xl font-semibold">
           {isRejected ? "Access denied" : "Awaiting approval"}

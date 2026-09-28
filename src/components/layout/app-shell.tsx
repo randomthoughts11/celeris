@@ -4,14 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart3,
   BookOpen,
   Bot,
   Building2,
   Calendar,
-  ChevronDown,
+  ChevronRight,
   GitBranch,
   HardDrive,
   Inbox,
@@ -23,6 +22,7 @@ import {
   Menu,
   MessageSquare,
   Phone,
+  Send,
   Settings,
   Share2,
   Shield,
@@ -45,6 +45,7 @@ import {
   canSeeCompanyNavItem,
   canSeeGlobalNav,
   isDeskFocused,
+  type GlobalNavItem,
 } from "@/lib/rbac/nav";
 import { NotificationsBell } from "@/components/layout/notifications-bell";
 import { ClockWidget } from "@/components/workforce/clock-widget";
@@ -72,6 +73,13 @@ const companyNav = [
   { key: "analytics" as const, href: "/analytics", label: "Analytics", icon: BarChart3, group: "ads" as const },
 ];
 
+const companyGroups = [
+  { id: "work", label: "Work" },
+  { id: "crm", label: "CRM" },
+  { id: "ops", label: "Operations" },
+  { id: "ads", label: "Advertising" },
+] as const;
+
 interface AppShellProps {
   user: SessionUser;
   children: React.ReactNode;
@@ -84,7 +92,7 @@ function formatSlugAsName(slug: string): string {
     .join(" ");
 }
 
-function NavChip({
+function SideLink({
   href,
   active,
   icon: Icon,
@@ -96,19 +104,29 @@ function NavChip({
   label: string;
 }) {
   return (
-    <Link href={href}>
-      <span
-        className={cn(
-          "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors",
-          active
-            ? "bg-white/10 text-foreground"
-            : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-        )}
-      >
-        <Icon className="h-3.5 w-3.5" />
-        {label}
-      </span>
+    <Link
+      href={href}
+      className={cn(
+        "relative flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",
+        active
+          ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground before:absolute before:inset-y-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-primary"
+          : "text-sidebar-foreground/80 hover:bg-muted hover:text-foreground"
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      <span className="truncate">{label}</span>
     </Link>
+  );
+}
+
+function SideSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-0.5">
+      <p className="px-2.5 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      {children}
+    </div>
   );
 }
 
@@ -119,9 +137,12 @@ export function AppShell({ user, children }: AppShellProps) {
   const homeHref = telecallerMode ? "/telecaller" : "/";
   const isHome = pathname === "/" || pathname === "/telecaller";
   const companySlug = pathname.match(/^\/companies\/([^/]+)/)?.[1];
-  const [companyName, setCompanyName] = useState<string | undefined>(
-    companySlug ? formatSlugAsName(companySlug) : undefined
-  );
+  const [resolvedName, setResolvedName] = useState<{ slug: string; name: string }>();
+  const companyName = companySlug
+    ? resolvedName?.slug === companySlug
+      ? resolvedName.name
+      : formatSlugAsName(companySlug)
+    : undefined;
   const basePath = companySlug ? `/companies/${companySlug}` : "";
   const showAdmin = hasPermission(user.roles, "MANAGE_USERS");
   const showTeam = hasAnyRole(user.roles, ["god_mode", "admin", "manager"]);
@@ -131,31 +152,19 @@ export function AppShell({ user, children }: AppShellProps) {
       : "Pending role";
 
   useEffect(() => {
-    if (!companySlug) {
-      setCompanyName(undefined);
-      return;
-    }
-    setCompanyName(formatSlugAsName(companySlug));
+    if (!companySlug) return;
     let cancelled = false;
     void resolveCompanyNameAction(companySlug).then((name) => {
-      if (!cancelled && name) setCompanyName(name);
+      if (!cancelled && name) setResolvedName({ slug: companySlug, name });
     });
     return () => {
       cancelled = true;
     };
   }, [companySlug]);
 
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
-
   const visibleCompanyNav = companyNav.filter((item) =>
     canSeeCompanyNavItem(user.roles, item.key)
   );
-  const workNav = visibleCompanyNav.filter((item) => item.group === "work");
-  const crmNav = visibleCompanyNav.filter((item) => item.group === "crm");
-  const opsNav = visibleCompanyNav.filter((item) => item.group === "ops");
-  const adsNav = visibleCompanyNav.filter((item) => item.group === "ads");
 
   const globalNav = [
     {
@@ -167,8 +176,9 @@ export function AppShell({ user, children }: AppShellProps) {
     { key: "inbox" as const, href: "/inbox", label: "Inbox", icon: Inbox },
     { key: "dashboards" as const, href: "/dashboards", label: "Dashboards", icon: Zap },
     { key: "knowledge" as const, href: "/knowledge", label: "Knowledge", icon: BookOpen },
-    { key: "ai-performance" as const, href: "/ai-performance", label: "AI Perf", icon: Bot },
+    { key: "ai-performance" as const, href: "/ai-performance", label: "AI Performance", icon: Bot },
     { key: "chat" as const, href: "/chat", label: "Chat", icon: MessageSquare },
+    { key: "drops" as const, href: "/drops", label: "Drop", icon: Send },
     { key: "vault" as const, href: "/vault", label: "Vault", icon: KeyRound },
     ...(showTeam
       ? [{ key: "team" as const, href: "/team", label: "Team", icon: Users }]
@@ -179,252 +189,157 @@ export function AppShell({ user, children }: AppShellProps) {
       : []),
   ].filter(
     (item) =>
-      item.key === "home" ||
-      canSeeGlobalNav(
-        user.roles,
-        item.key as
-          | "chat"
-          | "settings"
-          | "admin"
-          | "team"
-          | "vault"
-          | "inbox"
-          | "knowledge"
-          | "ai-performance"
-          | "dashboards"
-      )
+      item.key === "home" || canSeeGlobalNav(user.roles, item.key as GlobalNavItem)
   );
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-1/4 top-0 h-[500px] w-[500px] rounded-full bg-violet-600/10 blur-[120px]" />
-        <div className="absolute -right-1/4 top-1/3 h-[400px] w-[400px] rounded-full bg-blue-600/10 blur-[100px]" />
-        <div className="absolute bottom-0 left-1/3 h-[300px] w-[300px] rounded-full bg-emerald-600/5 blur-[80px]" />
-      </div>
+  const currentLabel =
+    visibleCompanyNav.find((item) =>
+      item.href === "" ? pathname === basePath : pathname.startsWith(`${basePath}${item.href}`)
+    )?.label ??
+    globalNav.find((item) => item.href !== homeHref && pathname.startsWith(item.href))?.label;
 
-      <header className="sticky top-0 z-50 border-b border-white/5 bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-3 px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3 sm:gap-5">
-            <button
-              type="button"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-white/5 hover:text-foreground md:hidden"
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              onClick={() => setMenuOpen((o) => !o)}
-            >
-              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+  const sidebar = (
+    <nav className="flex h-full flex-col overflow-y-auto px-3 pb-4">
+      <SideSection label="Workspace">
+        {globalNav.map((item) => (
+          <SideLink
+            key={item.href}
+            href={item.href}
+            active={item.href === homeHref ? isHome : pathname.startsWith(item.href)}
+            icon={item.icon}
+            label={item.label}
+          />
+        ))}
+      </SideSection>
 
-            <Link href={homeHref} className="flex shrink-0 items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-blue-600">
-                <span className="text-sm font-bold text-white">V</span>
-              </div>
-              <span className="hidden font-semibold tracking-tight sm:inline">
-                Vande AI CRM
-              </span>
-            </Link>
-
-            {companySlug && companyName && (
-              <Link
-                href={homeHref}
-                className="hidden min-w-0 items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 lg:flex"
-                title="Switch brand"
-              >
-                <Building2 className="h-3.5 w-3.5 shrink-0 text-violet-400" />
-                <span className="max-w-[200px] truncate text-sm font-medium">
-                  {companyName}
-                </span>
-                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              </Link>
-            )}
-
-            <nav className="hidden items-center gap-0.5 md:flex">
-              {globalNav.map((item) => {
-                const active =
-                  item.href === homeHref
-                    ? isHome
-                    : pathname.startsWith(item.href);
+      {companySlug &&
+        companyGroups.map((group) => {
+          const items = visibleCompanyNav.filter((i) => i.group === group.id);
+          if (items.length === 0) return null;
+          return (
+            <SideSection key={group.id} label={group.label}>
+              {items.map((item) => {
+                const href = `${basePath}${item.href}`;
                 return (
-                  <NavChip
-                    key={item.href}
-                    href={item.href}
-                    active={active}
+                  <SideLink
+                    key={item.key}
+                    href={href}
+                    active={item.href === "" ? pathname === basePath : pathname.startsWith(href)}
                     icon={item.icon}
                     label={item.label}
                   />
                 );
               })}
+            </SideSection>
+          );
+        })}
+    </nav>
+  );
+
+  const brandSwitcher = companySlug && companyName && (
+    <Link
+      href={homeHref}
+      className="mx-3 mt-3 flex items-center gap-2.5 rounded-md border bg-card px-2.5 py-2 hover:bg-muted"
+      title="Switch brand"
+    >
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-semibold text-primary">
+        {companyName.charAt(0)}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium leading-tight">{companyName}</p>
+        <p className="text-[11px] text-muted-foreground">Brand · switch</p>
+      </div>
+    </Link>
+  );
+
+  const logo = (
+    <Link href={homeHref} className="flex items-center gap-2">
+      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
+        <span className="text-sm font-bold text-primary-foreground">V</span>
+      </div>
+      <span className="font-semibold tracking-tight">Vande AI CRM</span>
+    </Link>
+  );
+
+  return (
+    <div className="min-h-screen bg-background">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 flex-col border-r bg-sidebar md:flex">
+        <div className="flex h-14 shrink-0 items-center border-b px-4">{logo}</div>
+        {brandSwitcher}
+        {sidebar}
+      </aside>
+
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-foreground/20" onClick={() => setMenuOpen(false)} />
+          <aside
+            className="absolute inset-y-0 left-0 flex w-64 flex-col border-r bg-sidebar shadow-xl"
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest("a")) setMenuOpen(false);
+            }}
+          >
+            <div className="flex h-14 shrink-0 items-center justify-between border-b px-4">
+              {logo}
+              <button
+                type="button"
+                aria-label="Close menu"
+                className="rounded-md p-1.5 text-muted-foreground hover:bg-muted"
+                onClick={() => setMenuOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {brandSwitcher}
+            {sidebar}
+          </aside>
+        </div>
+      )}
+
+      <div className="md:pl-60">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b bg-background/95 px-4 backdrop-blur sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted md:hidden"
+              aria-label="Open menu"
+              onClick={() => setMenuOpen(true)}
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <nav className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+              <Link href={homeHref} className="hover:text-foreground">
+                {telecallerMode ? "Desk" : "Brands"}
+              </Link>
+              {companySlug && companyName && (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                  <Link href={basePath} className="truncate hover:text-foreground">
+                    {companyName}
+                  </Link>
+                </>
+              )}
+              {currentLabel && (
+                <>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate font-medium text-foreground">{currentLabel}</span>
+                </>
+              )}
             </nav>
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <ClockWidget />
             <NotificationsBell userId={user.id} />
-
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium leading-none">{user.fullName}</p>
-              <p className="mt-1 text-xs text-violet-400">{roleLabel}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{roleLabel}</p>
             </div>
-
-            <UserButton
-              appearance={{
-                elements: { avatarBox: "h-8 w-8" },
-              }}
-            />
+            <UserButton appearance={{ elements: { avatarBox: "h-8 w-8" } }} />
           </div>
-        </div>
+        </header>
 
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden border-t border-white/5 md:hidden"
-            >
-              <nav className="mx-auto flex max-w-[1600px] flex-col gap-1 px-4 py-3">
-                {globalNav.map((item) => {
-                  const Icon = item.icon;
-                  const active =
-                    item.href === homeHref
-                      ? isHome
-                      : pathname.startsWith(item.href);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm",
-                        active
-                          ? "bg-white/10 text-foreground"
-                          : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {item.label}
-                    </Link>
-                  );
-                })}
-                {companySlug && (
-                  <>
-                    <p className="mt-3 px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                      {companyName ?? "This brand"}
-                    </p>
-                    {visibleCompanyNav.map((item) => {
-                      const href = `${basePath}${item.href}`;
-                      const Icon = item.icon;
-                      const active =
-                        item.href === ""
-                          ? pathname === basePath
-                          : pathname.startsWith(href);
-                      return (
-                        <Link
-                          key={item.href}
-                          href={href}
-                          className={cn(
-                            "flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm",
-                            active
-                              ? "bg-white/10 text-foreground"
-                              : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                          )}
-                        >
-                          <Icon className="h-4 w-4" />
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </>
-                )}
-              </nav>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {companySlug && visibleCompanyNav.length > 0 && (
-          <div className="border-t border-white/5">
-            <div className="mx-auto flex max-w-[1600px] items-center gap-4 overflow-x-auto px-4 py-2 sm:px-6">
-              <CompanyTabGroup
-                label="Work"
-                items={workNav}
-                basePath={basePath}
-                pathname={pathname}
-              />
-              {crmNav.length > 0 && (
-                <CompanyTabGroup
-                  label="CRM"
-                  items={crmNav}
-                  basePath={basePath}
-                  pathname={pathname}
-                />
-              )}
-              {opsNav.length > 0 && (
-                <CompanyTabGroup
-                  label="Ops"
-                  items={opsNav}
-                  basePath={basePath}
-                  pathname={pathname}
-                />
-              )}
-              {adsNav.length > 0 && (
-                <CompanyTabGroup
-                  label="Ads"
-                  items={adsNav}
-                  basePath={basePath}
-                  pathname={pathname}
-                />
-              )}
-            </div>
-          </div>
-        )}
-      </header>
-
-      <main className="mx-auto max-w-[1600px] px-4 py-8 sm:px-6">{children}</main>
-    </div>
-  );
-}
-
-function CompanyTabGroup({
-  label,
-  items,
-  basePath,
-  pathname,
-}: {
-  label: string;
-  items: typeof companyNav;
-  basePath: string;
-  pathname: string;
-}) {
-  if (items.length === 0) return null;
-  return (
-    <div className="flex shrink-0 items-center gap-1">
-      <span className="mr-1 hidden text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70 sm:inline">
-        {label}
-      </span>
-      {items.map((item) => {
-        const href = `${basePath}${item.href}`;
-        const isActive =
-          item.href === ""
-            ? pathname === basePath
-            : pathname.startsWith(href);
-        const Icon = item.icon;
-        return (
-          <Link key={item.href} href={href}>
-            <motion.span
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors",
-                isActive
-                  ? "bg-white/10 text-foreground"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-              )}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {item.label}
-            </motion.span>
-          </Link>
-        );
-      })}
+        <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6">{children}</main>
+      </div>
     </div>
   );
 }

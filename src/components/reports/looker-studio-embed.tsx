@@ -14,7 +14,7 @@ export function LookerStudioEmbed({
   if (!embedUrl) return null;
 
   return (
-    <Card className="overflow-hidden border-white/5 bg-white/[0.02] p-0">
+    <Card className="overflow-hidden border-border bg-card p-0">
       <iframe
         src={embedUrl}
         title={title}

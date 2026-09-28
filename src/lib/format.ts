@@ -39,14 +39,14 @@ export function formatDuration(seconds: number): string {
 }
 
 export function getHealthColor(score: number): string {
-  if (score >= 80) return "text-emerald-400";
-  if (score >= 60) return "text-amber-400";
-  return "text-red-400";
+  if (score >= 80) return "text-emerald-600";
+  if (score >= 60) return "text-orange-600";
+  return "text-red-600";
 }
 
 export function getHealthBg(score: number): string {
   if (score >= 80) return "bg-emerald-500/20";
-  if (score >= 60) return "bg-amber-500/20";
+  if (score >= 60) return "bg-orange-500/20";
   return "bg-red-500/20";
 }
 
@@ -84,7 +84,7 @@ export function getSeverityColor(severity: string): string {
     case "critical":
       return "border-red-500/30 bg-red-500/10";
     case "warning":
-      return "border-amber-500/30 bg-amber-500/10";
+      return "border-orange-500/30 bg-orange-500/10";
     case "success":
       return "border-emerald-500/30 bg-emerald-500/10";
     default:

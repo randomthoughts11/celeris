@@ -72,8 +72,8 @@ export function TeamTaskStats({
           type="button"
           onClick={() => pushState("open", scope)}
           className={cn(
-            "rounded-xl border border-white/5 bg-white/[0.03] p-5 text-left transition-colors hover:border-white/20 hover:bg-white/[0.05]",
-            filter === "open" && "border-violet-500/40 bg-violet-500/10"
+            "rounded-xl border border-border bg-card p-5 text-left transition-colors hover:border-border hover:bg-muted",
+            filter === "open" && "border-blue-500/40 bg-blue-500/10"
           )}
         >
           <p className="text-sm text-muted-foreground">
@@ -83,35 +83,35 @@ export function TeamTaskStats({
           <p className="mt-1 text-[11px] text-muted-foreground">Click to view</p>
         </button>
 
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Completed overall</p>
-          <p className="text-3xl font-semibold text-emerald-400">
+          <p className="text-3xl font-semibold text-emerald-600">
             {completedCount}
           </p>
         </Card>
 
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Team members active</p>
           <p className="text-3xl font-semibold">{activeMembers}</p>
         </Card>
 
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">On the clock</p>
-          <p className="text-3xl font-semibold text-emerald-400">{onClock}</p>
+          <p className="text-3xl font-semibold text-emerald-600">{onClock}</p>
         </Card>
 
         <button
           type="button"
           onClick={() => pushState("overdue", scope)}
           className={cn(
-            "rounded-xl border border-white/5 bg-white/[0.03] p-5 text-left transition-colors hover:border-amber-500/40 hover:bg-amber-500/5",
-            filter === "overdue" && "border-amber-500/50 bg-amber-500/10"
+            "rounded-xl border border-border bg-card p-5 text-left transition-colors hover:border-orange-500/40 hover:bg-orange-500/5",
+            filter === "overdue" && "border-orange-500/50 bg-orange-500/10"
           )}
         >
           <p className="text-sm text-muted-foreground">
             {scope === "mine" ? "My overdue" : "Overdue"}
           </p>
-          <p className="text-3xl font-semibold text-amber-400">
+          <p className="text-3xl font-semibold text-orange-600">
             {overdueTasks.length}
           </p>
           <p className="mt-1 text-[11px] text-muted-foreground">Click to view</p>
@@ -122,7 +122,7 @@ export function TeamTaskStats({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">{title}</h2>
           <div className="flex flex-wrap gap-2">
-            <div className="flex gap-1 rounded-full bg-white/5 p-0.5">
+            <div className="flex gap-1 rounded-full bg-card p-0.5">
               <FilterChip
                 active={scope === "mine"}
                 onClick={() => pushState(filter === "all" ? "open" : filter, "mine")}
@@ -148,8 +148,8 @@ export function TeamTaskStats({
             </div>
           </div>
         </div>
-        <Card className="overflow-hidden border-white/5 bg-white/[0.02]">
-          <ul className="divide-y divide-white/5">
+        <Card className="overflow-hidden border-border bg-card">
+          <ul className="divide-y divide-border">
             {visible.map((task) => {
               const overdue = Boolean(
                 task.due_date && isPast(new Date(task.due_date))
@@ -158,7 +158,7 @@ export function TeamTaskStats({
                 <li key={task.id}>
                   <Link
                     href={`/companies/${task.company_slug}/board`}
-                    className="flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-white/[0.03]"
+                    className="flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-muted"
                   >
                     <div className="min-w-0">
                       <p className="font-medium">{task.title}</p>
@@ -177,7 +177,7 @@ export function TeamTaskStats({
                         {task.status.replace("_", " ")}
                       </Badge>
                       {overdue && (
-                        <Badge className="bg-amber-500/20 text-amber-300">
+                        <Badge className="bg-orange-500/20 text-orange-700">
                           Overdue
                         </Badge>
                       )}
@@ -185,7 +185,7 @@ export function TeamTaskStats({
                         <span
                           className={cn(
                             "text-xs",
-                            overdue && "text-amber-400"
+                            overdue && "text-orange-600"
                           )}
                         >
                           Due {format(new Date(task.due_date), "MMM d")}
@@ -230,8 +230,8 @@ function FilterChip({
       className={cn(
         "rounded-full px-3 py-1 text-xs transition-colors",
         active
-          ? "bg-white/15 text-foreground"
-          : "bg-white/5 text-muted-foreground hover:bg-white/10"
+          ? "bg-muted text-foreground"
+          : "bg-card text-muted-foreground hover:bg-muted"
       )}
     >
       {label}

@@ -42,10 +42,10 @@ export function SettingsIntegrations({
         </p>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="border-white/5 bg-white/[0.02] p-4">
+          <Card className="border-border bg-card p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <Megaphone className="h-5 w-5 text-blue-400" />
+                <Megaphone className="h-5 w-5 text-blue-600" />
                 <div>
                   <p className="font-medium">Google (Ads + Drive)</p>
                   <p className="text-xs text-muted-foreground">
@@ -65,14 +65,14 @@ export function SettingsIntegrations({
                 </Button>
               </a>
             ) : (
-              <p className="mt-3 text-xs text-amber-400">{googleConfigHint}</p>
+              <p className="mt-3 text-xs text-orange-600">{googleConfigHint}</p>
             )}
           </Card>
 
-          <Card className="border-white/5 bg-white/[0.02] p-4">
+          <Card className="border-border bg-card p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <Target className="h-5 w-5 text-indigo-400" />
+                <Target className="h-5 w-5 text-indigo-600" />
                 <div>
                   <p className="font-medium">Meta (Ads + Social)</p>
                   <p className="text-xs text-muted-foreground">
@@ -92,7 +92,7 @@ export function SettingsIntegrations({
                 </Button>
               </a>
             ) : (
-              <p className="mt-3 text-xs text-amber-400">
+              <p className="mt-3 text-xs text-orange-600">
                 Set META_APP_ID and META_APP_SECRET
               </p>
             )}
@@ -105,10 +105,10 @@ export function SettingsIntegrations({
         {companies.map((c) => (
           <Card
             key={c.companyId}
-            className="flex flex-wrap items-center justify-between gap-4 border-white/5 bg-white/[0.02] p-4"
+            className="flex flex-wrap items-center justify-between gap-4 border-border bg-card p-4"
           >
             <div className="flex items-center gap-3">
-              <HardDrive className="h-4 w-4 text-blue-400" />
+              <HardDrive className="h-4 w-4 text-blue-600" />
               <div>
                 <p className="font-medium">{c.name}</p>
                 <p className="text-xs text-muted-foreground">

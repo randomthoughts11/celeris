@@ -31,9 +31,9 @@ export default async function AdminPage() {
               Recent security and data changes across brands.
             </p>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-white/10">
+          <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-white/10 text-xs text-muted-foreground">
+              <thead className="border-b border-border text-xs text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2">When</th>
                   <th className="px-3 py-2">User</th>
@@ -54,7 +54,7 @@ export default async function AdminPage() {
                   </tr>
                 ) : (
                   auditLogs.map((a) => (
-                    <tr key={a.id} className="border-b border-white/5">
+                    <tr key={a.id} className="border-b border-border">
                       <td className="px-3 py-2 text-muted-foreground">
                         {new Date(a.created_at).toLocaleString()}
                       </td>

@@ -37,11 +37,11 @@ function CardBody({ card }: { card: DeckCard }) {
           variant="outline"
           className={cn(
             "text-[10px]",
-            card.status === "done" && "border-emerald-500/40 text-emerald-300",
+            card.status === "done" && "border-emerald-500/40 text-emerald-700",
             card.status === "in_progress" &&
-              "border-sky-500/40 text-sky-300",
-            card.status === "review" && "border-amber-500/40 text-amber-300",
-            card.status === "blocked" && "border-red-500/40 text-red-300"
+              "border-sky-500/40 text-sky-700",
+            card.status === "review" && "border-orange-500/40 text-orange-700",
+            card.status === "blocked" && "border-red-500/40 text-red-700"
           )}
         >
           {STATUS_LABELS[card.status] ?? card.status}
@@ -80,7 +80,7 @@ function CardBody({ card }: { card: DeckCard }) {
           <span
             className={cn(
               "flex items-center gap-1",
-              overdue && "text-red-400"
+              overdue && "text-red-600"
             )}
           >
             <AlarmClock className="h-3 w-3" />
@@ -117,7 +117,7 @@ function CardBody({ card }: { card: DeckCard }) {
 
 export function CardPreview({ card }: { card: DeckCard }) {
   return (
-    <Card className="w-72 rotate-2 border-white/10 bg-zinc-900 p-3 shadow-xl">
+    <Card className="w-72 rotate-2 border-border bg-card p-3 shadow-xl">
       <CardBody card={card} />
     </Card>
   );
@@ -172,7 +172,7 @@ export function CardItem({
       >
         <Card
           className={cn(
-            "cursor-grab border-white/5 bg-white/[0.02] p-3 backdrop-blur-sm transition-colors hover:border-white/15 active:cursor-grabbing",
+            "cursor-grab border-border bg-card p-3 backdrop-blur-sm transition-colors hover:border-border active:cursor-grabbing",
             isOverdue(card) && "border-red-500/30",
             isDragging && "opacity-40"
           )}

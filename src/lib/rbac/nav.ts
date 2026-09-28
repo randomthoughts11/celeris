@@ -115,7 +115,8 @@ export type GlobalNavItem =
   | "inbox"
   | "knowledge"
   | "ai-performance"
-  | "dashboards";
+  | "dashboards"
+  | "drops";
 
 export function canSeeGlobalNav(
   roles: UserRole[],
@@ -124,6 +125,7 @@ export function canSeeGlobalNav(
   if (isDeskFocused(roles)) {
     return (
       item === "chat" ||
+      item === "drops" ||
       item === "inbox" ||
       item === "knowledge" ||
       item === "dashboards"

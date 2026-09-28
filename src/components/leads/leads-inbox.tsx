@@ -24,9 +24,9 @@ import type { Lead } from "@/types";
 import { cn } from "@/lib/utils";
 
 const statusColors: Record<string, string> = {
-  new: "bg-blue-500/20 text-blue-300",
-  contacted: "bg-violet-500/20 text-violet-300",
-  qualified: "bg-emerald-500/20 text-emerald-300",
+  new: "bg-blue-500/20 text-blue-700",
+  contacted: "bg-blue-500/20 text-blue-700",
+  qualified: "bg-emerald-500/20 text-emerald-700",
 };
 
 interface LeadsInboxProps {
@@ -112,17 +112,17 @@ export function LeadsInbox({
 
       <div className="space-y-4">
         {sorted.map((lead) => (
-          <Card key={lead.id} className="border-white/5 bg-white/[0.02] p-4">
+          <Card key={lead.id} className="border-border bg-card p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <Link
                   href={`/companies/${companySlug}/leads/${lead.id}`}
-                  className="font-semibold hover:text-violet-400"
+                  className="font-semibold hover:text-blue-600"
                 >
                   {lead.first_name} {lead.last_name}
                 </Link>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <Badge className={cn(statusColors[lead.status] ?? "bg-white/10")}>
+                  <Badge className={cn(statusColors[lead.status] ?? "bg-muted")}>
                     {lead.status}
                   </Badge>
                   {lead.source && (
@@ -132,7 +132,7 @@ export function LeadsInbox({
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-amber-400">
+              <div className="flex items-center gap-1 text-orange-600">
                 <Star className="h-3.5 w-3.5 fill-current" />
                 <span className="text-sm font-medium">{lead.score}</span>
               </div>
@@ -157,7 +157,7 @@ export function LeadsInbox({
                 ? `Last contact ${formatDistanceToNow(new Date(lead.last_contact_at), { addSuffix: true })}`
                 : "Awaiting first contact"}
             </p>
-            <div className="mt-3 border-t border-white/5 pt-3">
+            <div className="mt-3 border-t border-border pt-3">
               <LeadQuickActions
                 lead={lead}
                 companyId={companyId}
@@ -167,7 +167,7 @@ export function LeadsInbox({
           </Card>
         ))}
         {sorted.length === 0 && (
-          <Card className="border-white/5 p-12 text-center text-muted-foreground">
+          <Card className="border-border p-12 text-center text-muted-foreground">
             No leads yet. Add manually or import from Meta/Google lead ads.
           </Card>
         )}

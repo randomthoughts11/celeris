@@ -48,7 +48,7 @@ export function CallLogClient({ companyId, calls, leads }: CallLogClientProps) {
         </p>
       </div>
 
-      <Card className="border-violet-500/20 bg-violet-500/5 p-6">
+      <Card className="border-blue-500/20 bg-blue-500/5 p-6">
         <h2 className="mb-4 flex items-center gap-2 font-semibold">
           <Phone className="h-4 w-4" />
           Log a call
@@ -139,23 +139,23 @@ export function CallLogClient({ companyId, calls, leads }: CallLogClientProps) {
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Total logged</p>
           <p className="text-2xl font-semibold">{calls.length}</p>
         </Card>
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Answered</p>
-          <p className="text-2xl font-semibold text-emerald-400">{answered.length}</p>
+          <p className="text-2xl font-semibold text-emerald-600">{answered.length}</p>
         </Card>
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Missed</p>
-          <p className="text-2xl font-semibold text-red-400">{missed.length}</p>
+          <p className="text-2xl font-semibold text-red-600">{missed.length}</p>
         </Card>
       </div>
 
       <div className="space-y-3">
         {calls.map((call) => (
-          <Card key={call.id} className="border-white/5 bg-white/[0.02] p-4">
+          <Card key={call.id} className="border-border bg-card p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{call.direction}</Badge>

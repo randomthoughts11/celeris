@@ -70,13 +70,13 @@ export function CompanyCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.4 }}
     >
-      <Card className="group relative overflow-hidden border-white/5 bg-white/[0.03] p-0 backdrop-blur-sm transition-all duration-300 hover:border-white/10 hover:bg-white/[0.05] hover:shadow-2xl hover:shadow-violet-500/5">
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-blue-500/5 opacity-0 transition-opacity group-hover:opacity-100" />
+      <Card className="group relative overflow-hidden border-border bg-card p-0 backdrop-blur-sm transition-all duration-300 hover:border-border hover:bg-muted hover:shadow-2xl hover:shadow-blue-500/5">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-blue-500/5 opacity-0 transition-opacity group-hover:opacity-100" />
 
         <Link href={`/companies/${company.slug}`} className="relative block p-6">
           <div className="mb-6 flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 ring-1 ring-white/10">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-500/20 ring-1 ring-border">
                 {company.logo_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -85,7 +85,7 @@ export function CompanyCard({
                     className="h-10 w-10 rounded-xl object-cover"
                   />
                 ) : (
-                  <span className="text-lg font-bold text-violet-300">
+                  <span className="text-lg font-bold text-blue-700">
                     {getInitials(company.name)}
                   </span>
                 )}
@@ -114,7 +114,7 @@ export function CompanyCard({
           </div>
 
           <div className="mb-4 flex flex-wrap gap-2">
-            <Badge variant="outline" className="border-white/10 bg-white/5">
+            <Badge variant="outline" className="border-border bg-card">
               <Megaphone className="mr-1 h-3 w-3" />
               {metrics?.active_campaigns ?? 0} campaigns
             </Badge>
@@ -126,7 +126,7 @@ export function CompanyCard({
                     ? "secondary"
                     : "outline"
               }
-              className="border-white/10"
+              className="border-border"
             >
               <Share2 className="mr-1 h-3 w-3" />
               Social {posting.label}
@@ -169,21 +169,21 @@ export function CompanyCard({
               </div>
               <Progress
                 value={metrics?.budget_used_percent ?? 0}
-                className="h-1.5 bg-white/5"
+                className="h-1.5 bg-card"
               />
             </div>
           )}
         </Link>
 
         {shortcuts.length > 0 && (
-          <div className="relative grid grid-cols-3 border-t border-white/8">
+          <div className="relative grid grid-cols-3 border-t border-border">
             {shortcuts.map((item) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={item.key}
                   href={item.href}
-                  className="flex items-center justify-center gap-1.5 py-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-white/5 hover:text-foreground"
+                  className="flex items-center justify-center gap-1.5 py-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
                   <Icon className="h-3.5 w-3.5" />
                   {item.label}

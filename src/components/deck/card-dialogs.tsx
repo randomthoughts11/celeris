@@ -462,7 +462,7 @@ export function CardDetailDialog({
                         "flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition",
                         active
                           ? "border-transparent"
-                          : "border-white/10 text-muted-foreground hover:border-white/25"
+                          : "border-border text-muted-foreground hover:border-border"
                       )}
                       style={
                         active
@@ -493,7 +493,7 @@ export function CardDetailDialog({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-7 gap-1 px-2 text-xs text-red-400 hover:text-red-300"
+                className="h-7 gap-1 px-2 text-xs text-red-600 hover:text-red-700"
                 onClick={remove}
                 disabled={pending}
               >
@@ -517,7 +517,7 @@ export function CardDetailDialog({
                 Proof of work — posts, ads, deliverables, etc.
               </p>
             </div>
-            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm transition-colors hover:bg-white/5">
+            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm transition-colors hover:bg-muted">
               <ImagePlus className="h-3.5 w-3.5" />
               Upload
               <input
@@ -543,7 +543,7 @@ export function CardDetailDialog({
               {attachments.map((file) => (
                 <div
                   key={file.id}
-                  className="group relative overflow-hidden rounded-md border border-white/10 bg-black/20"
+                  className="group relative overflow-hidden rounded-md border border-border bg-black/20"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -557,7 +557,7 @@ export function CardDetailDialog({
                     </span>
                     <button
                       type="button"
-                      className="text-red-300 hover:text-red-200"
+                      className="text-red-700 hover:text-red-800"
                       disabled={pending}
                       onClick={() => removeAttachment(file.id)}
                       title="Remove"
@@ -582,7 +582,7 @@ export function CardDetailDialog({
           ) : (
             <div className="space-y-3">
               {comments.map((c) => (
-                <div key={c.id} className="rounded-md bg-white/[0.03] p-3">
+                <div key={c.id} className="rounded-md bg-card p-3">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-xs font-medium">{c.user_name}</p>
                     <p className="text-[10px] text-muted-foreground">

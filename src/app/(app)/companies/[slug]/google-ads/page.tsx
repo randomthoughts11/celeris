@@ -59,7 +59,7 @@ export default async function GoogleAdsPage({ params }: PageProps) {
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-violet-400">
+        <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
           Ads report
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Google Ads</h1>
@@ -83,7 +83,7 @@ export default async function GoogleAdsPage({ params }: PageProps) {
           title={`${company.name} Google Ads`}
         />
       ) : (
-        <Card className="border-white/5 bg-white/[0.02] p-8 text-center text-sm text-muted-foreground">
+        <Card className="border-border bg-card p-8 text-center text-sm text-muted-foreground">
           No Google Ads dashboard linked for this brand yet.
         </Card>
       )}
@@ -101,19 +101,19 @@ export default async function GoogleAdsPage({ params }: PageProps) {
       {campaigns.length > 0 && (
         <>
           <div className="grid gap-4 sm:grid-cols-4">
-            <Card className="border-white/5 bg-white/[0.03] p-5">
+            <Card className="border-border bg-card p-5">
               <p className="text-sm text-muted-foreground">30-day spend</p>
               <p className="text-2xl font-semibold">{formatCurrency(totalSpend)}</p>
             </Card>
-            <Card className="border-white/5 bg-white/[0.03] p-5">
+            <Card className="border-border bg-card p-5">
               <p className="text-sm text-muted-foreground">Active</p>
               <p className="text-2xl font-semibold">{active.length}</p>
             </Card>
-            <Card className="border-white/5 bg-white/[0.03] p-5">
+            <Card className="border-border bg-card p-5">
               <p className="text-sm text-muted-foreground">Paused</p>
               <p className="text-2xl font-semibold">{paused.length}</p>
             </Card>
-            <Card className="border-white/5 bg-white/[0.03] p-5">
+            <Card className="border-border bg-card p-5">
               <p className="text-sm text-muted-foreground">Campaigns</p>
               <p className="text-2xl font-semibold">{campaigns.length}</p>
             </Card>
@@ -124,7 +124,7 @@ export default async function GoogleAdsPage({ params }: PageProps) {
             {campaigns.map((campaign) => (
               <Card
                 key={campaign.id}
-                className="border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm"
+                className="border-border bg-card p-6 backdrop-blur-sm"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
@@ -136,7 +136,7 @@ export default async function GoogleAdsPage({ params }: PageProps) {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-semibold text-emerald-400">
+                    <p className="text-lg font-semibold text-emerald-600">
                       {formatRoas(campaign.roas)}
                     </p>
                     <p className="text-xs text-muted-foreground">ROAS (30d)</p>

@@ -21,7 +21,7 @@ export function MetricCard({
   return (
     <Card
       className={cn(
-        "border-white/5 bg-white/[0.03] p-5 backdrop-blur-sm",
+        "border-border bg-card p-5 backdrop-blur-sm",
         className
       )}
     >
@@ -31,8 +31,8 @@ export function MetricCard({
         <p
           className={cn(
             "mt-1 text-xs",
-            trend === "up" && "text-emerald-400",
-            trend === "down" && "text-red-400",
+            trend === "up" && "text-emerald-600",
+            trend === "down" && "text-red-600",
             trend === "neutral" && "text-muted-foreground"
           )}
         >

@@ -33,7 +33,7 @@ export default async function AiPerformancePage() {
         ].map((m) => (
           <div
             key={m.label}
-            className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+            className="rounded-xl border border-border bg-card p-4"
           >
             <p className="text-xs text-muted-foreground">{m.label}</p>
             <p className="mt-1 text-2xl font-semibold">{m.value}</p>
@@ -41,11 +41,11 @@ export default async function AiPerformancePage() {
         ))}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm font-medium">AI avg duration</p>
           <p className="text-xl">{Math.round(perf.avgDuration)}s</p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm font-medium">Human (RingCentral) calls</p>
           <p className="text-xl">
             {toNumber(human[0]?.total)} · avg {Math.round(toNumber(human[0]?.avg_duration))}s
@@ -57,7 +57,7 @@ export default async function AiPerformancePage() {
         {calls.map((c) => (
           <div
             key={c.id}
-            className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-sm"
+            className="rounded-lg border border-border bg-card px-3 py-2 text-sm"
           >
             {c.phone_number || "—"} · {c.status} · score {c.score ?? "—"} ·{" "}
             {c.sentiment ?? "—"}

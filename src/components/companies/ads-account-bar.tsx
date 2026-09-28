@@ -80,7 +80,7 @@ export function AdsAccountBar({
 
   if (!agencyConnected) {
     return (
-      <Card className="border-amber-500/20 bg-amber-500/5 p-5">
+      <Card className="border-orange-500/20 bg-orange-500/5 p-5">
         <p className="font-medium">Connect {label} once for the agency</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Settings → connect {label}. Then come back here and pick this brand’s
@@ -96,7 +96,7 @@ export function AdsAccountBar({
   }
 
   return (
-    <Card className="flex flex-wrap items-end justify-between gap-4 border-white/8 bg-white/[0.03] p-5">
+    <Card className="flex flex-wrap items-end justify-between gap-4 border-border bg-card p-5">
       <div className="min-w-0 space-y-3">
         {linkedAccountName ? (
           <div>

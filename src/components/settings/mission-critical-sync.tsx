@@ -99,7 +99,7 @@ export function MissionCriticalSync({
         </Select>
       </div>
 
-      <Card className="space-y-4 border-amber-500/20 bg-amber-500/5 p-5">
+      <Card className="space-y-4 border-orange-500/20 bg-orange-500/5 p-5">
         <h3 className="font-semibold">Privyr CSV</h3>
         <p className="text-sm text-muted-foreground">
           POST CSV to this URL with header <code className="text-xs">x-webhook-secret</code>{" "}
@@ -139,7 +139,7 @@ export function MissionCriticalSync({
         </div>
       </Card>
 
-      <Card className="space-y-4 border-white/5 bg-white/[0.02] p-5">
+      <Card className="space-y-4 border-border bg-card p-5">
         <h3 className="font-semibold">Call ingest</h3>
         <p className="text-sm text-muted-foreground">
           Zapier/Make POST to this URL with the brand token as{" "}

@@ -153,7 +153,7 @@ export function VaultClient({
       </div>
 
       {filtered.length === 0 ? (
-        <Card className="flex flex-col items-center gap-2 border-white/5 bg-white/[0.02] p-10 text-center">
+        <Card className="flex flex-col items-center gap-2 border-border bg-card p-10 text-center">
           <KeyRound className="h-8 w-8 text-muted-foreground" />
           <p className="font-medium">No credentials here yet</p>
           <p className="text-sm text-muted-foreground">
@@ -239,7 +239,7 @@ function EntryCard({
   };
 
   return (
-    <Card className="flex flex-col gap-3 border-white/5 bg-white/[0.02] p-4 backdrop-blur-sm">
+    <Card className="flex flex-col gap-3 border-border bg-card p-4 backdrop-blur-sm">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="truncate font-medium">{entry.title}</p>
@@ -268,7 +268,7 @@ function EntryCard({
       </div>
 
       {entry.username && (
-        <div className="flex items-center justify-between gap-2 rounded-md bg-white/[0.03] px-3 py-1.5">
+        <div className="flex items-center justify-between gap-2 rounded-md bg-card px-3 py-1.5">
           <span className="truncate text-sm text-muted-foreground">
             {entry.username}
           </span>
@@ -283,7 +283,7 @@ function EntryCard({
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-2 rounded-md bg-white/[0.03] px-3 py-1.5">
+      <div className="flex items-center justify-between gap-2 rounded-md bg-card px-3 py-1.5">
         <span
           className={cn(
             "truncate font-mono text-sm",
@@ -362,7 +362,7 @@ function EntryCard({
               disabled={pending}
               title="Delete"
             >
-              <Trash2 className="h-3.5 w-3.5 text-red-400" />
+              <Trash2 className="h-3.5 w-3.5 text-red-600" />
             </Button>
           </div>
         )}
@@ -598,7 +598,7 @@ function ShareDialog({
           {users.map((u) => (
             <label
               key={u.id}
-              className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-sm hover:bg-white/5"
+              className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-sm hover:bg-muted"
             >
               <Checkbox
                 checked={selected.has(u.id)}

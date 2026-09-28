@@ -33,7 +33,7 @@ export default async function TelecallerWorkspacePage() {
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-sm text-violet-400">Telecaller desk</p>
+        <p className="text-sm text-blue-600">Telecaller desk</p>
         <h1 className="mt-1 text-2xl font-semibold">Hi {firstName}</h1>
         <p className="text-muted-foreground">
           Start with brands that still need a first contact.
@@ -41,17 +41,17 @@ export default async function TelecallerWorkspacePage() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="border-white/8 bg-white/[0.03] p-4">
+        <Card className="border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Brands</p>
           <p className="mt-1 text-2xl font-semibold">{companyStats.length}</p>
         </Card>
-        <Card className="border-white/8 bg-white/[0.03] p-4">
+        <Card className="border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Leads assigned</p>
           <p className="mt-1 text-2xl font-semibold">{totalLeads}</p>
         </Card>
-        <Card className="border-white/8 bg-amber-500/10 p-4">
-          <p className="text-xs text-amber-300">Need first contact</p>
-          <p className="mt-1 text-2xl font-semibold text-amber-200">
+        <Card className="border-border bg-orange-500/10 p-4">
+          <p className="text-xs text-orange-700">Need first contact</p>
+          <p className="mt-1 text-2xl font-semibold text-orange-800">
             {totalAwaiting}
           </p>
         </Card>
@@ -61,12 +61,12 @@ export default async function TelecallerWorkspacePage() {
         {companyStats.map((c) => (
           <Card
             key={c.id}
-            className="border-white/5 bg-white/[0.02] p-5 transition-colors hover:bg-white/[0.04]"
+            className="border-border bg-card p-5 transition-colors hover:bg-muted"
           >
             <div className="flex items-start justify-between gap-3">
               <h2 className="font-semibold">{c.name}</h2>
               {c.awaiting > 0 && (
-                <Badge className="bg-amber-500/20 text-amber-300">
+                <Badge className="bg-orange-500/20 text-orange-700">
                   {c.awaiting} need contact
                 </Badge>
               )}

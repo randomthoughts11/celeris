@@ -57,11 +57,11 @@ export function CompanyJumpBar({
             key={tile.key}
             href={`/companies/${slug}${tile.href}`}
             className={cn(
-              "group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] p-4",
-              "transition-colors hover:border-white/15 hover:bg-white/[0.06]"
+              "group flex items-center gap-3 rounded-xl border border-border bg-card p-4",
+              "transition-colors hover:border-border hover:bg-muted"
             )}
           >
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/15 text-blue-700">
               <Icon className="h-5 w-5" />
             </span>
             <span className="min-w-0">

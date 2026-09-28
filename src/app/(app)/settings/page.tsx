@@ -57,7 +57,7 @@ export default async function SettingsPage() {
         driveConfigured={isGoogleDriveConfigured()}
         canConnectAgency={canManageCompanies(user)}
       />
-      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+      <div className="rounded-xl border border-border bg-card p-5">
         <h2 className="text-sm font-medium">Vande AI CRM integrations</h2>
         <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
           <li>ElevenLabs: {elevenLabsStatusMessage()}</li>

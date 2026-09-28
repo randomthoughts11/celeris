@@ -27,7 +27,8 @@ export default function RootLayout({
   const tree = (
           <ThemeProvider
             attribute="class"
-            defaultTheme="dark"
+            defaultTheme="light"
+            forcedTheme="light"
             enableSystem={false}
             disableTransitionOnChange
           >
@@ -39,7 +40,7 @@ export default function RootLayout({
   );
 
   return (
-    <html lang="en" className={`${inter.variable} dark`} suppressHydrationWarning>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="min-h-screen font-sans antialiased">
         {clerkKey ? (
           <ClerkProvider appearance={{ theme: shadcn }}>{tree}</ClerkProvider>

@@ -15,6 +15,8 @@ const isPublicRoute = createRouteMatcher([
   "/setup(.*)",
   "/api/webhooks/(.*)",
   "/api/integrations/privyr/import(.*)",
+  "/d/(.*)",
+  "/api/drops/(.*)",
 ]);
 
 const isApprovalExempt = createRouteMatcher([
@@ -22,6 +24,7 @@ const isApprovalExempt = createRouteMatcher([
   "/setup(.*)",
   "/api/webhooks/(.*)",
   "/api/integrations/privyr/import(.*)",
+  "/d/(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

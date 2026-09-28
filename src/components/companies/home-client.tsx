@@ -127,7 +127,7 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-violet-400">{roleLabel}</p>
+          <p className="text-sm text-blue-600">{roleLabel}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
             {greeting()}, {firstName}
           </h1>
@@ -265,7 +265,7 @@ export function HomeClient({ companies, user, agencyTasks }: HomeClientProps) {
       )}
 
       {companies.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-6 py-20 text-center">
+        <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-20 text-center">
           <p className="text-lg font-medium">Your brand desk is empty</p>
           <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
             {canCreate

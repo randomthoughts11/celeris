@@ -66,7 +66,7 @@ export function PublishingHub({
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-violet-400">
+        <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
           Launchpad
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">
@@ -79,17 +79,17 @@ export function PublishingHub({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="border-white/8 bg-white/[0.03] p-4">
+        <Card className="border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Brand name</p>
           <p className="mt-1 font-medium">{companyName}</p>
           <CopyButton text={companyName} label="Copy name" />
         </Card>
-        <Card className="border-white/8 bg-white/[0.03] p-4">
+        <Card className="border-border bg-card p-4">
           <p className="text-xs text-muted-foreground">Starter caption</p>
           <p className="mt-1 text-sm">{caption}</p>
           <CopyButton text={caption} label="Copy caption" />
         </Card>
-        <Card className="flex flex-col justify-between border-white/8 bg-white/[0.03] p-4">
+        <Card className="flex flex-col justify-between border-border bg-card p-4">
           <div>
             <p className="text-xs text-muted-foreground">After you post</p>
             <p className="mt-1 text-sm">Tick the Board card so the team sees it shipped.</p>
@@ -107,7 +107,7 @@ export function PublishingHub({
         {PLATFORMS.map((platform) => (
           <Card
             key={platform.id}
-            className="flex flex-col border-white/8 bg-white/[0.03] p-5 transition-colors hover:border-white/15"
+            className="flex flex-col border-border bg-card p-5 transition-colors hover:border-border"
           >
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-semibold">{platform.name}</h3>
@@ -135,7 +135,7 @@ export function PublishingHub({
             href={siteUrl(companyWebsite)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-violet-400 hover:underline"
+            className="text-blue-600 hover:underline"
           >
             {companyWebsite}
           </a>

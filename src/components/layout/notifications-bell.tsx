@@ -59,7 +59,7 @@ export function NotificationsBell({ userId }: { userId: string }) {
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-4 w-4" />
             {unread > 0 && (
-              <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-violet-500 text-[10px] text-white">
+              <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-500 text-[10px] text-white">
                 {unread > 9 ? "9+" : unread}
               </span>
             )}
@@ -71,7 +71,7 @@ export function NotificationsBell({ userId }: { userId: string }) {
           <div className="border-b border-border px-3 py-2">
             <button
               type="button"
-              className="text-xs text-violet-400 hover:underline"
+              className="text-xs text-blue-600 hover:underline"
               onClick={markAllRead}
               disabled={pending}
             >
@@ -99,7 +99,7 @@ export function NotificationsBell({ userId }: { userId: string }) {
               {n.link && (
                 <Link
                   href={n.link}
-                  className="text-xs text-violet-400 hover:underline"
+                  className="text-xs text-blue-600 hover:underline"
                   onClick={() => markRead(n.id)}
                 >
                   View

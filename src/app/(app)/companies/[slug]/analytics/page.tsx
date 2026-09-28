@@ -56,13 +56,13 @@ export default async function AnalyticsPage({ params }: PageProps) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Monthly Spend</p>
           <p className="text-2xl font-semibold">
             {formatCurrency(metrics?.monthly_ad_spend ?? 0)}
           </p>
         </Card>
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Budget Remaining</p>
           <p className="text-2xl font-semibold">
             {formatCurrency(
@@ -70,9 +70,9 @@ export default async function AnalyticsPage({ params }: PageProps) {
             )}
           </p>
         </Card>
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Blended ROAS</p>
-          <p className="text-2xl font-semibold text-emerald-400">
+          <p className="text-2xl font-semibold text-emerald-600">
             {formatRoas(metrics?.roas ?? 0)}
           </p>
         </Card>
@@ -81,7 +81,7 @@ export default async function AnalyticsPage({ params }: PageProps) {
       <div className="grid gap-6 lg:grid-cols-2">
         {topCampaign && (
           <Card className="border-emerald-500/20 bg-emerald-500/5 p-6">
-            <p className="text-sm text-emerald-400">Top Performing Campaign</p>
+            <p className="text-sm text-emerald-600">Top Performing Campaign</p>
             <p className="mt-1 text-lg font-semibold">{topCampaign.name}</p>
             <p className="text-muted-foreground">
               {formatRoas(topCampaign.roas)} ROAS ·{" "}
@@ -91,7 +91,7 @@ export default async function AnalyticsPage({ params }: PageProps) {
         )}
         {worstCampaign && (
           <Card className="border-red-500/20 bg-red-500/5 p-6">
-            <p className="text-sm text-red-400">Needs Attention</p>
+            <p className="text-sm text-red-600">Needs Attention</p>
             <p className="mt-1 text-lg font-semibold">{worstCampaign.name}</p>
             <p className="text-muted-foreground">
               {formatRoas(worstCampaign.roas)} ROAS · Consider pausing or
@@ -118,9 +118,9 @@ export default async function AnalyticsPage({ params }: PageProps) {
       {campaignAttribution.length > 0 && (
         <div className="space-y-2">
           <h2 className="text-sm font-medium">Campaign attribution</h2>
-          <div className="overflow-x-auto rounded-xl border border-white/10">
+          <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-white/10 text-xs text-muted-foreground">
+              <thead className="border-b border-border text-xs text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2">Campaign</th>
                   <th className="px-3 py-2">Platform</th>
@@ -133,7 +133,7 @@ export default async function AnalyticsPage({ params }: PageProps) {
                 {campaignAttribution.map((row) => (
                   <tr
                     key={`${row.platform}:${row.campaign}`}
-                    className="border-b border-white/5"
+                    className="border-b border-border"
                   >
                     <td className="px-3 py-2 font-medium">{row.campaign}</td>
                     <td className="px-3 py-2 text-muted-foreground">

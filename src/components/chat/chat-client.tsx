@@ -103,19 +103,19 @@ export function ChatClient({
       onClick={() => setActiveRoom(room.id)}
       className={cn(
         "w-full rounded-lg p-3 text-left transition-colors",
-        activeRoom === room.id ? "bg-white/10 ring-1 ring-white/10" : "hover:bg-white/5"
+        activeRoom === room.id ? "bg-muted ring-1 ring-border" : "hover:bg-muted"
       )}
     >
       <div className="flex items-center justify-between gap-2">
         <p className="truncate text-sm font-medium">{room.name}</p>
         {(room.unread_count ?? 0) > 0 && (
-          <span className="shrink-0 rounded-full bg-violet-500 px-1.5 text-xs text-white">
+          <span className="shrink-0 rounded-full bg-blue-500 px-1.5 text-xs text-white">
             {room.unread_count}
           </span>
         )}
       </div>
       {room.company_name && !room.is_dm && (
-        <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-violet-300/80">
+        <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-blue-700/80">
           <Building2 className="h-3 w-3 shrink-0" />
           {room.company_name}
         </p>
@@ -128,8 +128,8 @@ export function ChatClient({
 
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-4">
-      <Card className="flex w-80 shrink-0 flex-col border-white/5 bg-white/[0.02]">
-        <div className="border-b border-white/5 p-4">
+      <Card className="flex w-80 shrink-0 flex-col border-border bg-card">
+        <div className="border-b border-border p-4">
           <h2 className="flex items-center gap-2 font-semibold">
             <MessageSquare className="h-4 w-4" />
             Team messages
@@ -163,15 +163,15 @@ export function ChatClient({
             )}
           </div>
         </ScrollArea>
-        <div className="border-t border-white/5 p-2">
+        <div className="border-t border-border p-2">
           <NewDmDialog teammates={teammates} currentUserId={currentUserId} />
         </div>
       </Card>
 
-      <Card className="flex flex-1 flex-col border-white/5 bg-white/[0.02]">
+      <Card className="flex flex-1 flex-col border-border bg-card">
         {active ? (
           <>
-            <div className="border-b border-white/5 p-4">
+            <div className="border-b border-border p-4">
               <h3 className="font-semibold">{active.name}</h3>
               {active.company_name && (
                 <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -198,7 +198,7 @@ export function ChatClient({
                       <div
                         className={cn(
                           "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                          mine ? "bg-violet-600 text-white" : "bg-white/10 text-muted-foreground"
+                          mine ? "bg-blue-600 text-white" : "bg-muted text-muted-foreground"
                         )}
                       >
                         {m.sender_avatar ? (
@@ -218,7 +218,7 @@ export function ChatClient({
                             {mine ? "You" : m.sender_name}
                           </span>
                           {!mine && m.sender_companies && m.sender_companies.length > 0 && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-[10px]">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-card px-2 py-0.5 text-[10px]">
                               <User className="h-2.5 w-2.5" />
                               {m.sender_companies.join(" · ")}
                             </span>
@@ -231,8 +231,8 @@ export function ChatClient({
                           className={cn(
                             "inline-block rounded-2xl px-4 py-2 text-sm",
                             mine
-                              ? "rounded-tr-md bg-violet-600 text-white"
-                              : "rounded-tl-md bg-white/10"
+                              ? "rounded-tr-md bg-blue-600 text-white"
+                              : "rounded-tl-md bg-muted"
                           )}
                         >
                           {m.content}
@@ -244,7 +244,7 @@ export function ChatClient({
                 <div ref={bottomRef} />
               </div>
             </ScrollArea>
-            <form onSubmit={handleSend} className="flex gap-2 border-t border-white/5 p-4">
+            <form onSubmit={handleSend} className="flex gap-2 border-t border-border p-4">
               <Input
                 value={text}
                 onChange={(e) => setText(e.target.value)}

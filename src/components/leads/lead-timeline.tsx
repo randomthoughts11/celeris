@@ -34,7 +34,7 @@ interface LeadTimelineProps {
 export function LeadTimeline({ lead, activities }: LeadTimelineProps) {
   return (
     <div className="space-y-6">
-      <Card className="border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm">
+      <Card className="border-border bg-card p-6 backdrop-blur-sm">
         <h2 className="text-lg font-semibold">
           {lead.first_name} {lead.last_name}
         </h2>
@@ -54,15 +54,15 @@ export function LeadTimeline({ lead, activities }: LeadTimelineProps) {
       <div>
         <h3 className="mb-4 text-lg font-semibold">Activity Timeline</h3>
         <div className="relative space-y-0">
-          <div className="absolute left-5 top-2 bottom-2 w-px bg-white/10" />
+          <div className="absolute left-5 top-2 bottom-2 w-px bg-muted" />
           {activities.map((activity) => {
             const Icon = activityIcons[activity.activity_type] ?? StickyNote;
             return (
               <div key={activity.id} className="relative flex gap-4 pb-6">
-                <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/5 ring-4 ring-background">
-                  <Icon className="h-4 w-4 text-violet-400" />
+                <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card ring-4 ring-background">
+                  <Icon className="h-4 w-4 text-blue-600" />
                 </div>
-                <Card className="flex-1 border-white/5 bg-white/[0.02] p-4">
+                <Card className="flex-1 border-border bg-card p-4">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-medium">{activity.title}</p>
                     <time className="shrink-0 text-xs text-muted-foreground">

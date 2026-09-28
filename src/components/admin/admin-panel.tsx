@@ -105,14 +105,14 @@ export function AdminPanel({
       {pendingUsers.length > 0 && (
         <section className="space-y-4">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Users className="h-5 w-5 text-amber-400" />
+            <Users className="h-5 w-5 text-orange-600" />
             Pending approval ({pendingUsers.length})
           </h2>
           <div className="space-y-3">
             {pendingUsers.map((u) => (
               <Card
                 key={u.id}
-                className="flex flex-wrap items-center justify-between gap-4 border-amber-500/20 bg-amber-500/5 p-4"
+                className="flex flex-wrap items-center justify-between gap-4 border-orange-500/20 bg-orange-500/5 p-4"
               >
                 <div>
                   <p className="font-medium">{u.full_name}</p>
@@ -166,7 +166,7 @@ export function AdminPanel({
 
       <section className="space-y-4">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <Shield className="h-5 w-5 text-violet-400" />
+          <Shield className="h-5 w-5 text-blue-600" />
           Team members
         </h2>
         <div className="space-y-3">
@@ -175,7 +175,7 @@ export function AdminPanel({
             return (
               <Card
                 key={u.id}
-                className="space-y-4 border-white/5 bg-white/[0.02] p-4"
+                className="space-y-4 border-border bg-card p-4"
               >
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div>
@@ -215,7 +215,7 @@ export function AdminPanel({
                 </div>
 
                 {!u.roles.includes("god_mode") && !u.roles.includes("admin") && (
-                  <div className="space-y-3 border-t border-white/5 pt-4">
+                  <div className="space-y-3 border-t border-border pt-4">
                     <p className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                       <Building2 className="h-4 w-4" />
                       Company access
@@ -231,7 +231,7 @@ export function AdminPanel({
                             {m.company_name}
                             <button
                               type="button"
-                              className="ml-1 rounded p-0.5 hover:bg-white/10"
+                              className="ml-1 rounded p-0.5 hover:bg-muted"
                               onClick={() =>
                                 act(() =>
                                   removeUserFromCompanyAction(u.id, m.company_id)
@@ -246,7 +246,7 @@ export function AdminPanel({
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-amber-400/90">
+                      <p className="text-sm text-orange-600/90">
                         Not assigned to any company — they will not see client data.
                       </p>
                     )}

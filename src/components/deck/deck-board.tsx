@@ -493,7 +493,7 @@ function ManageLabelsDialog({
           {labels.map((label) => (
             <div
               key={label.id}
-              className="flex items-center justify-between gap-2 rounded-md border border-white/5 px-3 py-2"
+              className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2"
             >
               <span className="flex items-center gap-2 text-sm">
                 <span
@@ -604,7 +604,7 @@ function StackColumn({
             onDoubleClick={() => setRenaming(true)}
           >
             {stack.title}
-            <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs">
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
               {cards.length}
             </span>
           </h3>
@@ -648,7 +648,7 @@ function StackColumn({
           ref={setNodeRef}
           className={cn(
             "flex min-h-24 flex-1 flex-col gap-2 rounded-lg p-1 transition-colors",
-            isOver && "bg-white/[0.04]"
+            isOver && "bg-card"
           )}
         >
           {cards.map((card) => (
@@ -704,7 +704,7 @@ function AddStackButton({
           render={
             <Button
               variant="ghost"
-              className="w-full justify-start gap-2 border border-dashed border-white/10 text-muted-foreground"
+              className="w-full justify-start gap-2 border border-dashed border-border text-muted-foreground"
             >
               <Plus className="h-4 w-4" />
               Add list

@@ -82,7 +82,7 @@ export default async function MetaAdsPage({ params }: PageProps) {
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-violet-400">
+        <p className="text-xs font-medium uppercase tracking-wider text-blue-600">
           Ads report
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Meta Ads</h1>
@@ -106,7 +106,7 @@ export default async function MetaAdsPage({ params }: PageProps) {
           title={`${company.name} Meta Ads`}
         />
       ) : (
-        <Card className="border-white/5 bg-white/[0.02] p-8 text-center text-sm text-muted-foreground">
+        <Card className="border-border bg-card p-8 text-center text-sm text-muted-foreground">
           No Meta Ads dashboard linked for this brand yet.
         </Card>
       )}
@@ -122,27 +122,27 @@ export default async function MetaAdsPage({ params }: PageProps) {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">30-day spend</p>
           <p className="text-2xl font-semibold">{formatCurrency(totalSpend)}</p>
         </Card>
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Campaigns</p>
           <p className="text-2xl font-semibold">{campaigns.length}</p>
         </Card>
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Ad sets / Ads</p>
           <p className="text-2xl font-semibold">
             {adSets.length} / {ads.length}
           </p>
         </Card>
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Leads · CPL</p>
           <p className="text-2xl font-semibold">
             {totalLeads} · {formatCurrency(cpl)}
           </p>
         </Card>
-        <Card className="border-white/5 bg-white/[0.03] p-5">
+        <Card className="border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Avg health</p>
           <p className="text-2xl font-semibold">
             {campaigns.length
@@ -160,12 +160,12 @@ export default async function MetaAdsPage({ params }: PageProps) {
           <h2 className="text-sm font-medium">Revenue attribution</h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {attribution.map((a) => (
-              <Card key={a.platform} className="border-white/5 bg-white/[0.02] p-4">
+              <Card key={a.platform} className="border-border bg-card p-4">
                 <p className="text-xs text-muted-foreground">{a.platform}</p>
                 <p className="font-medium">
                   Spend {formatCurrency(a.spend)} · Rev {formatCurrency(a.revenue)}
                 </p>
-                <p className="text-sm text-emerald-400">ROAS {formatRoas(a.roas)}</p>
+                <p className="text-sm text-emerald-600">ROAS {formatRoas(a.roas)}</p>
               </Card>
             ))}
           </div>
@@ -175,9 +175,9 @@ export default async function MetaAdsPage({ params }: PageProps) {
       {campaignAttribution.length > 0 && (
         <div className="space-y-2">
           <h2 className="text-sm font-medium">Campaign attribution</h2>
-          <div className="overflow-x-auto rounded-xl border border-white/10">
+          <div className="overflow-x-auto rounded-xl border border-border">
             <table className="w-full text-left text-sm">
-              <thead className="border-b border-white/10 text-xs text-muted-foreground">
+              <thead className="border-b border-border text-xs text-muted-foreground">
                 <tr>
                   <th className="px-3 py-2">Campaign</th>
                   <th className="px-3 py-2">Platform</th>
@@ -190,7 +190,7 @@ export default async function MetaAdsPage({ params }: PageProps) {
                 {campaignAttribution.map((row) => (
                   <tr
                     key={`${row.platform}:${row.campaign}`}
-                    className="border-b border-white/5"
+                    className="border-b border-border"
                   >
                     <td className="px-3 py-2 font-medium">{row.campaign}</td>
                     <td className="px-3 py-2 text-muted-foreground">{row.platform}</td>
@@ -210,7 +210,7 @@ export default async function MetaAdsPage({ params }: PageProps) {
           <h2 className="text-sm font-medium">Branch marketing performance</h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {branchPerf.map((b) => (
-              <Card key={b.id} className="border-white/5 bg-white/[0.02] p-4">
+              <Card key={b.id} className="border-border bg-card p-4">
                 <p className="font-medium">{b.name}</p>
                 <p className="text-xs text-muted-foreground">
                   {b.leads} leads · {b.customers} customers · {formatCurrency(b.revenue)}
@@ -225,7 +225,7 @@ export default async function MetaAdsPage({ params }: PageProps) {
         {campaigns.map((campaign) => (
           <Card
             key={campaign.id}
-            className="border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm"
+            className="border-border bg-card p-6 backdrop-blur-sm"
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
@@ -249,7 +249,7 @@ export default async function MetaAdsPage({ params }: PageProps) {
                   <p className="text-xs text-muted-foreground">Health</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-lg font-semibold text-emerald-400">
+                  <p className="text-lg font-semibold text-emerald-600">
                     {formatRoas(campaign.roas)}
                   </p>
                   <p className="text-xs text-muted-foreground">ROAS (30d)</p>
@@ -269,7 +269,7 @@ export default async function MetaAdsPage({ params }: PageProps) {
         ))}
 
         {campaigns.length === 0 && (
-          <Card className="border-white/5 bg-white/[0.02] p-12 text-center">
+          <Card className="border-border bg-card p-12 text-center">
             <p className="text-muted-foreground">
               {linkedName
                 ? "No campaign delivery in the last 30 days. Sync again after ads run."
@@ -283,7 +283,7 @@ export default async function MetaAdsPage({ params }: PageProps) {
         <div className="space-y-2">
           <h2 className="text-sm font-medium">Ad sets</h2>
           {adSets.slice(0, 20).map((s) => (
-            <Card key={s.id} className="border-white/5 bg-white/[0.02] p-4">
+            <Card key={s.id} className="border-border bg-card p-4">
               <div className="flex flex-wrap justify-between gap-2">
                 <p className="font-medium">{s.name}</p>
                 <p className="text-sm text-muted-foreground">
@@ -300,7 +300,7 @@ export default async function MetaAdsPage({ params }: PageProps) {
         <div className="space-y-2">
           <h2 className="text-sm font-medium">Ads</h2>
           {ads.slice(0, 20).map((ad) => (
-            <Card key={ad.id} className="border-white/5 bg-white/[0.02] p-4">
+            <Card key={ad.id} className="border-border bg-card p-4">
               <div className="flex flex-wrap justify-between gap-2">
                 <p className="font-medium">{ad.name}</p>
                 <p className="text-sm text-muted-foreground">

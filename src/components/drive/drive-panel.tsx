@@ -66,8 +66,8 @@ export function DrivePanel({
 
   if (!googleConfigured) {
     return (
-      <Card className="border-amber-500/20 bg-amber-500/5 p-6">
-        <p className="font-medium text-amber-400">Google Drive not configured</p>
+      <Card className="border-orange-500/20 bg-orange-500/5 p-6">
+        <p className="font-medium text-orange-600">Google Drive not configured</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Add GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and NEXT_PUBLIC_APP_URL to
           your environment variables.
@@ -78,11 +78,11 @@ export function DrivePanel({
 
   return (
     <div className="space-y-6">
-      <Card className="border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm">
+      <Card className="border-border bg-card p-6 backdrop-blur-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20">
-              <HardDrive className="h-5 w-5 text-blue-400" />
+              <HardDrive className="h-5 w-5 text-blue-600" />
             </div>
             <div>
               <h3 className="font-semibold">Google Drive</h3>
@@ -123,15 +123,15 @@ export function DrivePanel({
 
         {connected && (
           <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1 rounded bg-white/5 px-2 py-1">
+            <span className="flex items-center gap-1 rounded bg-card px-2 py-1">
               <FolderOpen className="h-3 w-3" />
               Agency OS / {companyName} / Posts
             </span>
-            <span className="flex items-center gap-1 rounded bg-white/5 px-2 py-1">
+            <span className="flex items-center gap-1 rounded bg-card px-2 py-1">
               <FolderOpen className="h-3 w-3" />
               Assets
             </span>
-            <span className="flex items-center gap-1 rounded bg-white/5 px-2 py-1">
+            <span className="flex items-center gap-1 rounded bg-card px-2 py-1">
               <FolderOpen className="h-3 w-3" />
               Reports
             </span>
@@ -171,18 +171,18 @@ export function DrivePanel({
 
           <div className="space-y-2">
             {files.length === 0 && (
-              <Card className="border-white/5 bg-white/[0.02] p-8 text-center text-muted-foreground">
+              <Card className="border-border bg-card p-8 text-center text-muted-foreground">
                 No files uploaded yet
               </Card>
             )}
             {files.map((file) => (
               <Card
                 key={file.id}
-                className="flex items-center justify-between border-white/5 bg-white/[0.02] p-4"
+                className="flex items-center justify-between border-border bg-card p-4"
               >
                 <div className="flex items-center gap-3">
                   {file.mime_type?.startsWith("image/") ? (
-                    <FileImage className="h-4 w-4 text-violet-400" />
+                    <FileImage className="h-4 w-4 text-blue-600" />
                   ) : (
                     <FileText className="h-4 w-4 text-muted-foreground" />
                   )}
@@ -201,7 +201,7 @@ export function DrivePanel({
                     href={file.web_view_link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sm text-violet-400 hover:underline"
+                    className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
                   >
                     Open
                     <ExternalLink className="h-3 w-3" />

@@ -30,7 +30,7 @@ interface ActivityFeedProps {
 
 export function ActivityFeed({ entries, title = "Recent activity" }: ActivityFeedProps) {
   return (
-    <Card className="border-white/5 bg-white/[0.02] p-5">
+    <Card className="border-border bg-card p-5">
       <h3 className="mb-4 font-semibold">{title}</h3>
       {entries.length === 0 ? (
         <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
@@ -38,7 +38,7 @@ export function ActivityFeed({ entries, title = "Recent activity" }: ActivityFee
         <ul className="space-y-3">
           {entries.map((entry) => (
             <li key={entry.id} className="flex gap-3 text-sm">
-              <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-violet-400" />
+              <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-400" />
               <div className="min-w-0">
                 <p>
                   <span className="font-medium">{entry.user_name ?? "Someone"}</span>{" "}

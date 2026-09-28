@@ -5,6 +5,7 @@ import {
   canSeeGlobalNav,
   getHomePathForRole,
   type CompanyNavItem,
+  type GlobalNavItem,
 } from "@/lib/rbac/nav";
 import { canManageBrandSetup } from "@/lib/auth/access";
 import type { SessionUser } from "@/types";
@@ -33,7 +34,7 @@ export async function requireSettingsAccess(): Promise<SessionUser> {
 }
 
 export async function requireGlobalNavAccess(
-  item: "chat" | "settings" | "admin" | "team" | "vault" | "inbox" | "knowledge" | "ai-performance" | "dashboards"
+  item: GlobalNavItem
 ): Promise<SessionUser> {
   const user = await requireSession();
   if (!canSeeGlobalNav(user.roles, item)) {

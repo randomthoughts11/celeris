@@ -44,26 +44,26 @@ export function PerformanceChart({
   };
 
   return (
-    <Card className="border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm">
+    <Card className="border-border bg-card p-6 backdrop-blur-sm">
       <h3 className="mb-4 font-semibold">{title}</h3>
       <div className="h-[240px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                <stop offset="5%" stopColor="#0c66e4" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#0c66e4" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis
               dataKey="date"
-              stroke="rgba(255,255,255,0.3)"
+              stroke="#6b7280"
               fontSize={12}
               tickLine={false}
             />
             <YAxis
-              stroke="rgba(255,255,255,0.3)"
+              stroke="#6b7280"
               fontSize={12}
               tickLine={false}
               tickFormatter={(v) =>
@@ -74,8 +74,8 @@ export function PerformanceChart({
             />
             <Tooltip
               contentStyle={{
-                background: "rgba(20,20,20,0.95)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                background: "#ffffff",
+                border: "1px solid #e5e7eb",
                 borderRadius: "8px",
               }}
               formatter={(value) => [formatValue(Number(value)), title]}
@@ -83,7 +83,7 @@ export function PerformanceChart({
             <Area
               type="monotone"
               dataKey="value"
-              stroke="#8b5cf6"
+              stroke="#0c66e4"
               strokeWidth={2}
               fill="url(#colorValue)"
             />

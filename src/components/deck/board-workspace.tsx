@@ -76,7 +76,7 @@ export function BoardWorkspace({
             {totalLogged} minutes logged
           </p>
         </div>
-        <div className="flex flex-wrap rounded-lg border border-white/10 bg-white/[0.02] p-1">
+        <div className="flex flex-wrap rounded-lg border border-border bg-card p-1">
           <ScopeChip
             active={scope === "mine"}
             onClick={() => setScope("mine")}
@@ -96,29 +96,29 @@ export function BoardWorkspace({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3">
+        <div className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs text-muted-foreground">Open</p>
           <p className="text-2xl font-semibold">{open}</p>
         </div>
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
-          <p className="text-xs text-emerald-300/80">Completed</p>
-          <p className="text-2xl font-semibold text-emerald-300">{completed}</p>
+          <p className="text-xs text-emerald-700/80">Completed</p>
+          <p className="text-2xl font-semibold text-emerald-700">{completed}</p>
         </div>
-        <div className="rounded-lg border border-white/5 bg-white/[0.02] px-4 py-3">
+        <div className="rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-xs text-muted-foreground">Overdue</p>
-          <p className="text-2xl font-semibold text-amber-300">{overdue}</p>
+          <p className="text-2xl font-semibold text-orange-700">{overdue}</p>
         </div>
       </div>
 
       {(scope === "mine" || scope === "created") && visibleCards.length === 0 && (
-        <p className="rounded-lg border border-dashed border-white/10 px-4 py-3 text-sm text-muted-foreground">
+        <p className="rounded-lg border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
           {scope === "created"
             ? "You haven’t created any cards on this board yet."
             : "No tasks assigned to you or created by you on this board."}{" "}
           Switch to{" "}
           <button
             type="button"
-            className="text-violet-300 underline-offset-2 hover:underline"
+            className="text-blue-700 underline-offset-2 hover:underline"
             onClick={() => setScope("team")}
           >
             Team tasks
@@ -156,7 +156,7 @@ function ScopeChip({
       className={cn(
         "rounded-md px-3 py-1.5 text-sm transition-colors",
         active
-          ? "bg-white/15 text-foreground"
+          ? "bg-muted text-foreground"
           : "text-muted-foreground hover:text-foreground"
       )}
     >

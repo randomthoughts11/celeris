@@ -29,7 +29,7 @@ interface SocialDashboardProps {
 export function SocialDashboard({ metrics }: SocialDashboardProps) {
   if (metrics.length === 0) {
     return (
-      <Card className="border-white/5 bg-white/[0.02] p-12 text-center">
+      <Card className="border-border bg-card p-12 text-center">
         <p className="text-muted-foreground">
           No social accounts connected. Connect platforms in settings.
         </p>
@@ -48,9 +48,9 @@ export function SocialDashboard({ metrics }: SocialDashboardProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
           >
-            <Card className="border-white/5 bg-white/[0.02] p-6 backdrop-blur-sm">
+            <Card className="border-border bg-card p-6 backdrop-blur-sm">
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-card">
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
@@ -60,7 +60,7 @@ export function SocialDashboard({ metrics }: SocialDashboardProps) {
                   </p>
                 </div>
                 <div className="ml-auto text-right">
-                  <p className="text-sm text-emerald-400">
+                  <p className="text-sm text-emerald-600">
                     +{m.growth_percent}%
                   </p>
                   <p className="text-xs text-muted-foreground">growth</p>

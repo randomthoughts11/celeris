@@ -84,9 +84,9 @@ export function NewDmDialog({ teammates, currentUserId }: NewDmDialogProps) {
                   type="button"
                   disabled={pending}
                   onClick={() => startDm(person.id)}
-                  className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-white/5"
+                  className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-muted"
                 >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-500/20 text-xs font-semibold text-violet-200">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/20 text-xs font-semibold text-blue-800">
                     {person.full_name
                       .split(" ")
                       .map((p) => p[0])

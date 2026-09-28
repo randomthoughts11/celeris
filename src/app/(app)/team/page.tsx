@@ -75,7 +75,7 @@ export default async function TeamDashboardPage({ searchParams }: PageProps) {
           {workload.map((person) => (
             <Card
               key={person.user_id}
-              className="border-white/5 bg-white/[0.02] p-5"
+              className="border-border bg-card p-5"
             >
               <div className="mb-3">
                 <p className="font-semibold">{person.full_name}</p>
@@ -87,7 +87,7 @@ export default async function TeamDashboardPage({ searchParams }: PageProps) {
                   {person.in_progress} in progress
                 </Badge>
                 {person.overdue_tasks > 0 && (
-                  <Badge className="bg-amber-500/20 text-amber-300">
+                  <Badge className="bg-orange-500/20 text-orange-700">
                     {person.overdue_tasks} overdue
                   </Badge>
                 )}
@@ -99,7 +99,7 @@ export default async function TeamDashboardPage({ searchParams }: PageProps) {
             </Card>
           ))}
           {workload.length === 0 && (
-            <Card className="border-white/5 bg-white/[0.02] p-8 text-center text-muted-foreground md:col-span-2">
+            <Card className="border-border bg-card p-8 text-center text-muted-foreground md:col-span-2">
               No assigned tasks yet. Assign work on each brand&apos;s Board.
             </Card>
           )}
