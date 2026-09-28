@@ -134,7 +134,8 @@ export async function ensureProfileForClerkUser(input: {
   await ensureAppMetaTable();
   const claimed = await sql`
     INSERT INTO app_meta (key, value)
-    VALUES ('tenant_owner', ${profile.id})
+    SELECT 'tenant_owner', ${profile.id}
+    WHERE NOT EXISTS (SELECT 1 FROM user_roles WHERE role = 'god_mode')
     ON CONFLICT (key) DO NOTHING
     RETURNING key
   `;

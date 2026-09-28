@@ -116,7 +116,8 @@ export type GlobalNavItem =
   | "knowledge"
   | "ai-performance"
   | "dashboards"
-  | "drops";
+  | "drops"
+  | "tasks";
 
 export function canSeeGlobalNav(
   roles: UserRole[],
@@ -126,6 +127,7 @@ export function canSeeGlobalNav(
     return (
       item === "chat" ||
       item === "drops" ||
+      item === "tasks" ||
       item === "inbox" ||
       item === "knowledge" ||
       item === "dashboards"
