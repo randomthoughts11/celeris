@@ -1,7 +1,7 @@
 export default function SetupPage() {
   return (
     <main className="mx-auto max-w-lg space-y-4 px-6 py-24">
-      <h1 className="text-2xl font-semibold">Agency OS is not configured</h1>
+      <h1 className="text-2xl font-semibold">Celeris CRM is not configured</h1>
       <p className="text-sm text-muted-foreground">
         Clerk and a Neon database are required in production. Missing secrets no
         longer open the app. Set <code>DATABASE_URL</code>,{" "}

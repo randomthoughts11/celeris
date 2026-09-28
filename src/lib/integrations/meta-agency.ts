@@ -394,6 +394,17 @@ export async function syncMetaSocialAccounts(companyId: string, adAccountId: str
   }
 }
 
+/** Pause a campaign, ad set or ad by its Meta id. Needs ads_management. */
+export async function pauseMetaObject(externalId: string): Promise<void> {
+  const token = await getMetaAccessToken();
+  const res = await fetch(`${META_API}/${externalId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ status: "PAUSED", access_token: token }),
+  });
+  if (!res.ok) throw new Error(`Meta pause failed: ${(await res.text()).slice(0, 200)}`);
+}
+
 export async function disconnectMetaAgency(): Promise<void> {
   await deleteAgencyCredential("meta");
 }

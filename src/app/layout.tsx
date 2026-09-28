@@ -13,7 +13,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Agency OS — AI-Native Agency CRM",
+  title: "Celeris CRM",
   description:
     "Premium operating system for digital marketing agencies. Manage campaigns, leads, social, and analytics in one place.",
 };

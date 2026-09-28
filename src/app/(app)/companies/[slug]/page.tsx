@@ -184,7 +184,10 @@ export default async function CompanyOverviewPage({ params }: PageProps) {
         </Card>
       </div>
 
-      <AiInsightsPanel insights={insights} companyId={company.id} />
+      <AiInsightsPanel
+        insights={insights.filter((i) => i.module !== "meta_ads_brain")}
+        companyId={company.id}
+      />
     </div>
   );
 }

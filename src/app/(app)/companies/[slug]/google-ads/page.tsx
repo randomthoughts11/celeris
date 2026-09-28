@@ -1,8 +1,6 @@
 import { notFound } from "next/navigation";
 import { AiInsightsPanel } from "@/components/ai/insights-panel";
 import { AdsAccountBar } from "@/components/companies/ads-account-bar";
-import { LookerStudioEmbed } from "@/components/reports/looker-studio-embed";
-import { LookerReportSettings } from "@/components/reports/looker-report-settings";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { getAiInsights, getGoogleAdsCampaigns } from "@/features/companies/company-data";
@@ -40,10 +38,6 @@ export default async function GoogleAdsPage({ params }: PageProps) {
 
   const canManage = canManageBrandSetup(user);
   const canSync = hasPermission(user.roles, "MANAGE_CAMPAIGNS");
-  const lookerEmbedUrl =
-    typeof googleIntegration?.config?.lookerEmbedUrl === "string"
-      ? googleIntegration.config.lookerEmbedUrl
-      : undefined;
   const linkedName =
     typeof googleIntegration?.config?.customerName === "string"
       ? googleIntegration.config.customerName
@@ -63,30 +57,8 @@ export default async function GoogleAdsPage({ params }: PageProps) {
           Ads report
         </p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">Google Ads</h1>
-        <p className="text-muted-foreground">
-          Live Looker dashboard for this brand.
-        </p>
+        <p className="text-muted-foreground">Campaigns for this brand.</p>
       </div>
-
-      {canManage && (
-        <LookerReportSettings
-          companyId={company.id}
-          provider="google_ads"
-          currentUrl={lookerEmbedUrl}
-          label="Google Ads"
-        />
-      )}
-
-      {lookerEmbedUrl ? (
-        <LookerStudioEmbed
-          url={lookerEmbedUrl}
-          title={`${company.name} Google Ads`}
-        />
-      ) : (
-        <Card className="border-border bg-card p-8 text-center text-sm text-muted-foreground">
-          No Google Ads dashboard linked for this brand yet.
-        </Card>
-      )}
 
       <AdsAccountBar
         companyId={company.id}

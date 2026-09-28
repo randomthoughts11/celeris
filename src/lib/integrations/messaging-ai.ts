@@ -40,7 +40,7 @@ export async function generateAiReply(input: {
         messages: [
           {
             role: "system",
-            content: `You are a sales messaging assistant for Vande AI CRM. Be concise, helpful, and on-brand.
+            content: `You are a sales messaging assistant for Celeris CRM. Be concise, helpful, and on-brand.
 Use the knowledge base when relevant. Do not invent pricing.
 ${kbContext ? `\nKnowledge base:\n${kbContext}` : ""}`,
           },

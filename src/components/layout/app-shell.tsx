@@ -257,9 +257,9 @@ export function AppShell({ user, children }: AppShellProps) {
   const logo = (
     <Link href={homeHref} className="flex items-center gap-2">
       <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
-        <span className="text-sm font-bold text-primary-foreground">V</span>
+        <span className="text-sm font-bold text-primary-foreground">C</span>
       </div>
-      <span className="font-semibold tracking-tight">Vande AI CRM</span>
+      <span className="font-semibold tracking-tight">Celeris CRM</span>
     </Link>
   );
 

@@ -96,25 +96,25 @@ export function AdsAccountBar({
   }
 
   return (
-    <Card className="flex flex-wrap items-end justify-between gap-4 border-border bg-card p-5">
-      <div className="min-w-0 space-y-3">
-        {linkedAccountName ? (
-          <div>
-            <p className="text-xs text-muted-foreground">Linked account</p>
-            <p className="font-medium">{linkedAccountName}</p>
-            {lastSyncedAt && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                Last sync {new Date(lastSyncedAt).toLocaleString()}
-              </p>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Pick the {label} account for this brand, then sync.
-          </p>
-        )}
+    <Card className="flex-row flex-wrap items-center gap-x-6 gap-y-3 border-border bg-card px-5 py-4">
+      {linkedAccountName ? (
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">Linked {label} account</p>
+          <p className="font-medium">{linkedAccountName}</p>
+          {lastSyncedAt && (
+            <p className="text-xs text-muted-foreground">
+              Last sync {new Date(lastSyncedAt).toLocaleString()}
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Pick the {label} account for this brand, then sync.
+        </p>
+      )}
+      <div className="ml-auto flex flex-wrap items-center gap-2">
         {canManage && (
-          <div className="flex flex-wrap items-center gap-2">
+          <>
             <Select value={selected} onValueChange={(v) => setSelected(v ?? "")}>
               <SelectTrigger className="w-[260px]">
                 <SelectValue
@@ -134,10 +134,10 @@ export function AdsAccountBar({
             <Button size="sm" onClick={link} disabled={pending || !selected}>
               {pending ? "Linking…" : linkedAccountName ? "Switch & sync" : "Link & sync"}
             </Button>
-          </div>
+          </>
         )}
+        {canSync && linkedAccountName && <SyncCompanyButton companyId={companyId} />}
       </div>
-      {canSync && linkedAccountName && <SyncCompanyButton companyId={companyId} />}
     </Card>
   );
 }

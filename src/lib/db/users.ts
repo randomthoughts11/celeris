@@ -216,7 +216,7 @@ export async function setUserApproval(
   if (status === "approved") {
     await sql`
       INSERT INTO notifications (user_id, type, title, message, link)
-      SELECT id, 'system', 'Account approved', 'Your account has been approved. You can now access Agency OS.', '/'
+      SELECT id, 'system', 'Account approved', 'Your account has been approved. You can now access Celeris CRM.', '/'
       FROM profiles WHERE id = ${userId}
     `;
   }

@@ -38,7 +38,7 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-2xl font-semibold">Settings</h1>
         <p className="text-muted-foreground">
-          Agency OAuth, Drive per brand, inbound webhooks, and Vande AI integrations.
+          Agency OAuth, Drive per brand, inbound webhooks, and Celeris CRM integrations.
         </p>
       </div>
       <SettingsIntegrations
@@ -58,7 +58,7 @@ export default async function SettingsPage() {
         canConnectAgency={canManageCompanies(user)}
       />
       <div className="rounded-xl border border-border bg-card p-5">
-        <h2 className="text-sm font-medium">Vande AI CRM integrations</h2>
+        <h2 className="text-sm font-medium">Celeris CRM integrations</h2>
         <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
           <li>ElevenLabs: {elevenLabsStatusMessage()}</li>
           <li>Wix Bookings: {wixStatusMessage()}</li>
