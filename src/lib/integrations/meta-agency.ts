@@ -12,7 +12,7 @@ import {
 } from "@/lib/integrations/ads-metrics";
 import type { AgencyAdAccount } from "@/types";
 
-const META_API = "https://graph.facebook.com/v21.0";
+export const META_API = "https://graph.facebook.com/v21.0";
 
 export interface MetaAgencyTokens extends Record<string, unknown> {
   access_token: string;
@@ -32,6 +32,9 @@ export function getMetaAgencyAuthUrl(userId: string): string {
     "pages_read_engagement",
     "pages_messaging",
     "business_management",
+    "leads_retrieval",
+    "pages_show_list",
+    "pages_manage_ads",
   ].join(",");
   const state = signOAuthState({ provider: "meta", userId });
   return `https://www.facebook.com/v21.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scopes}&state=${state}&response_type=code`;

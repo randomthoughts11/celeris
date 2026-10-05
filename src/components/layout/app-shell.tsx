@@ -23,6 +23,7 @@ import {
   Menu,
   MessageSquare,
   Phone,
+  PhoneCall,
   Send,
   Settings,
   Share2,
@@ -83,6 +84,7 @@ const companyGroups = [
 
 interface AppShellProps {
   user: SessionUser;
+  showCallAudit?: boolean;
   children: React.ReactNode;
 }
 
@@ -131,7 +133,7 @@ function SideSection({ label, children }: { label: string; children: React.React
   );
 }
 
-export function AppShell({ user, children }: AppShellProps) {
+export function AppShell({ user, showCallAudit, children }: AppShellProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const telecallerMode = isDeskFocused(user.roles);
@@ -175,6 +177,7 @@ export function AppShell({ user, children }: AppShellProps) {
       icon: Building2,
     },
     { key: "tasks" as const, href: "/tasks", label: "Tasks", icon: ListChecks },
+    { key: "call-audit" as const, href: "/call-audit", label: "Call audit", icon: PhoneCall },
     { key: "inbox" as const, href: "/inbox", label: "Inbox", icon: Inbox },
     { key: "dashboards" as const, href: "/dashboards", label: "Dashboards", icon: Zap },
     { key: "knowledge" as const, href: "/knowledge", label: "Knowledge", icon: BookOpen },
@@ -191,7 +194,8 @@ export function AppShell({ user, children }: AppShellProps) {
       : []),
   ].filter(
     (item) =>
-      item.key === "home" || canSeeGlobalNav(user.roles, item.key as GlobalNavItem)
+      item.key === "home" ||
+      (item.key === "call-audit" ? showCallAudit : canSeeGlobalNav(user.roles, item.key as GlobalNavItem))
   );
 
   const currentLabel =

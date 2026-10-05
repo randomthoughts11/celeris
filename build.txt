@@ -1,6 +1,20 @@
 Celeris CRM — Build Log
 =======================
 
+2026-10-05 — Telecaller call audit
+---------------------------------
+- New private page /call-audit (only emails in CALL_AUDIT_VIEWERS see it or the nav link; everyone else gets 404).
+- Runs at 12:00 PM and 12:00 AM IST (Vercel cron /api/cron/call-audit) and on demand ("Re-run latest window").
+- Sources: Meta lead-form leads per campaign (Graph /{ad}/leads, stored in meta_leads), RingCentral account
+  call log + voicemails via JWT API (stored in ringcentral_calls; voicemails transcribed by RingCentral or Whisper),
+  her Excel/Google sheet via share link (CALL_AUDIT_SHEET_URLS), Privyr activities (privyr_activities).
+- Rules (src/lib/call-audit/engine.ts): outbound call under 20s = cut by the operator; 2h response window;
+  verdicts Called / Cut under 20s / Claimed, no call / Message only / Untouched / Waiting; flags for late first
+  call, conversation not on log, voicemail not returned, real call not logged. Every logged call is checked
+  against RingCentral. If RingCentral can't be read the report is marked inconclusive and nobody is judged.
+- Migration 014_call_audit.sql. Meta connect now also asks for leads_retrieval, pages_show_list, pages_manage_ads.
+- Pending on deploy day: RingCentral JWT key, Privyr session capture, sheet share link, second viewer email.
+
 2026-09-28 — Light redesign, Drop, Meta ads brain
 ------------------------------------------------
 UI / product

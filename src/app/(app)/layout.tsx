@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { getSessionUser } from "@/lib/auth/session";
+import { canViewCallAudit } from "@/lib/call-audit/access";
 
 export default async function AppLayout({
   children,
@@ -12,5 +13,9 @@ export default async function AppLayout({
     return children;
   }
 
-  return <AppShell user={user}>{children}</AppShell>;
+  return (
+    <AppShell user={user} showCallAudit={canViewCallAudit(user)}>
+      {children}
+    </AppShell>
+  );
 }
