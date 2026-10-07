@@ -35,7 +35,10 @@ async function connect() {
 }
 
 async function portalPage(ctx) {
-  const open = ctx.pages().find((p) => p.url().startsWith("https://service.ringcentral.com/application"));
+  const pages = ctx.pages();
+  const open =
+    pages.find((p) => p.url().startsWith("https://service.ringcentral.com/application")) ??
+    pages.find((p) => /^https:\/\/(service|login)\.ringcentral\.com\//.test(p.url()));
   if (open) return open;
   const p = await ctx.newPage();
   await p.goto("https://service.ringcentral.com/", { waitUntil: "domcontentloaded", timeout: 60_000 }).catch(() => {});
