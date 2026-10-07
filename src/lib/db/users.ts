@@ -1,6 +1,7 @@
 import { getSql } from "./client";
 import type { AdminUser, ApprovalStatus, Profile, SessionUser, UserRole } from "@/types";
 import { hasPermission } from "@/lib/rbac/permissions";
+import { canViewCallAudit } from "@/lib/call-audit/access";
 
 export interface DbUser extends Profile {
   clerk_user_id?: string | null;
@@ -104,6 +105,16 @@ export async function ensureProfileForClerkUser(input: {
   const byEmail = await getUserByEmail(input.email);
   if (byEmail?.clerk_user_id && byEmail.clerk_user_id !== input.clerkUserId) {
     throw new Error("This email is already linked to another account");
+  }
+
+  if (canViewCallAudit(input)) {
+    await sql`
+      INSERT INTO profiles (email, full_name, avatar_url, clerk_user_id, approval_status)
+      VALUES (${input.email.toLowerCase()}, ${input.fullName}, ${input.avatarUrl}, ${input.clerkUserId}, 'approved')
+      ON CONFLICT (email) DO UPDATE SET clerk_user_id = EXCLUDED.clerk_user_id, approval_status = 'approved', updated_at = now()
+    `;
+    const viewer = await getUserByClerkId(input.clerkUserId);
+    if (viewer) return viewer;
   }
 
   if (byEmail && !byEmail.clerk_user_id) {

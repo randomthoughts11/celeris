@@ -5,6 +5,7 @@ import {
   isDatabaseConfigured,
   isDemoMode,
 } from "@/lib/config";
+import { isAuditOnly } from "@/lib/call-audit/access";
 
 const isPublicRoute = createRouteMatcher([
   "/login(.*)",
@@ -56,11 +57,23 @@ export default clerkMiddleware(async (auth, request) => {
     const { neon } = await import("@neondatabase/serverless");
     const sql = neon(process.env.DATABASE_URL!);
     const rows = await sql`
-      SELECT approval_status FROM profiles
-      WHERE clerk_user_id = ${userId} AND is_active = true
+      SELECT p.approval_status, p.email, COALESCE(array_agg(r.role::text) FILTER (WHERE r.role IS NOT NULL), '{}'::text[]) AS roles
+      FROM profiles p LEFT JOIN user_roles r ON r.user_id = p.id
+      WHERE p.clerk_user_id = ${userId} AND p.is_active = true
+      GROUP BY p.id
       LIMIT 1
     `;
     const status = rows[0]?.approval_status as string | undefined;
+    const path = request.nextUrl.pathname;
+
+    if (
+      rows[0] &&
+      isAuditOnly({ email: rows[0].email as string, roles: rows[0].roles as string[] }) &&
+      !path.startsWith("/call-audit") &&
+      !path.startsWith("/api/")
+    ) {
+      return NextResponse.redirect(new URL("/call-audit", request.url));
+    }
 
     if (status === "pending" && !request.nextUrl.pathname.startsWith("/pending-approval")) {
       return NextResponse.redirect(new URL("/pending-approval", request.url));

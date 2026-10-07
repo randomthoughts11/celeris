@@ -85,6 +85,8 @@ const companyGroups = [
 interface AppShellProps {
   user: SessionUser;
   showCallAudit?: boolean;
+  /** Call-audit viewers outside the agency see only the audit. */
+  auditOnly?: boolean;
   children: React.ReactNode;
 }
 
@@ -133,11 +135,12 @@ function SideSection({ label, children }: { label: string; children: React.React
   );
 }
 
-export function AppShell({ user, showCallAudit, children }: AppShellProps) {
+export function AppShell({ user, showCallAudit, auditOnly, children }: AppShellProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const telecallerMode = isDeskFocused(user.roles);
-  const homeHref = telecallerMode ? "/telecaller" : "/";
+  const homeHref = auditOnly ? "/call-audit" : telecallerMode ? "/telecaller" : "/";
+  const homeLabel = auditOnly ? "Call audit" : telecallerMode ? "Desk" : "Brands";
   const isHome = pathname === "/" || pathname === "/telecaller";
   const companySlug = pathname.match(/^\/companies\/([^/]+)/)?.[1];
   const [resolvedName, setResolvedName] = useState<{ slug: string; name: string }>();
@@ -173,8 +176,8 @@ export function AppShell({ user, showCallAudit, children }: AppShellProps) {
     {
       key: "home" as const,
       href: homeHref,
-      label: telecallerMode ? "Desk" : "Brands",
-      icon: Building2,
+      label: homeLabel,
+      icon: auditOnly ? PhoneCall : Building2,
     },
     { key: "tasks" as const, href: "/tasks", label: "Tasks", icon: ListChecks },
     { key: "call-audit" as const, href: "/call-audit", label: "Call audit", icon: PhoneCall },
@@ -195,7 +198,8 @@ export function AppShell({ user, showCallAudit, children }: AppShellProps) {
   ].filter(
     (item) =>
       item.key === "home" ||
-      (item.key === "call-audit" ? showCallAudit : canSeeGlobalNav(user.roles, item.key as GlobalNavItem))
+      (!auditOnly &&
+        (item.key === "call-audit" ? showCallAudit : canSeeGlobalNav(user.roles, item.key as GlobalNavItem)))
   );
 
   const currentLabel =
@@ -314,7 +318,7 @@ export function AppShell({ user, showCallAudit, children }: AppShellProps) {
             </button>
             <nav className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
               <Link href={homeHref} className="hover:text-foreground">
-                {telecallerMode ? "Desk" : "Brands"}
+                {homeLabel}
               </Link>
               {companySlug && companyName && (
                 <>

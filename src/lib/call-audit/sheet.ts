@@ -142,29 +142,61 @@ export function sheetClaims(tabs: Array<{ sheet: string; rows: string[][] }>, si
       const status = row[callI] ?? "";
       const day = parseSheetDay(row[dateI] ?? "", now);
       if (!key || !status || !day || day < since) continue;
-      const missed = /did ?n.?t|not received|no response|no answer|busy|switch|unreach|voice ?mail|\bvm\b|rnr|ring/i.test(status);
+      const note = (noteI !== null && row[noteI]) || "";
+      const said = `${status} ${note}`;
+      const missed = /did ?n.?t|not received|no response|no answer|busy|switch|unreach|voice ?mail|\bvm\b|rnr|ring/i.test(said);
       claims.push({
         phoneKey: key,
         name: (nameI !== null && row[nameI]) || key,
         source: "sheet",
-        kind: !missed && /receiv|spoke|talk|connect|answer|interest/i.test(status) ? "conversation" : "call",
+        kind: !missed && /receiv|spoke|talk|connect|answer|interest|explain|asked/i.test(said) ? "conversation" : "call",
         at: null,
         day,
-        text: `${sheet}, ${day}: ${status}${noteI !== null && row[noteI] ? ` (${row[noteI]})` : ""}`,
+        text: `${sheet}, ${day}: ${status}${note ? ` (${note})` : ""}`,
       });
     }
   }
   return claims;
 }
 
-/** Download each configured sheet link and return its claims. */
+const SHARE_ERROR = (status: number) => `Could not download the sheet (${status}). Share it as "anyone with the link can view".`;
+
+/** A SharePoint/OneDrive folder share link: every spreadsheet inside it, read with the link's guest cookie. */
+async function sharePointFolder(link: string): Promise<Buffer[]> {
+  const open = await fetch(link, { redirect: "manual" });
+  const location = open.headers.get("location");
+  if (!location) throw new Error(SHARE_ERROR(open.status));
+  const cookie = open.headers.getSetCookie().map((c) => c.split(";")[0]).join("; ");
+  const target = new URL(location, link);
+  const folder = target.searchParams.get("id") ?? "";
+  const site = target.origin + folder.split("/").slice(0, 3).join("/");
+  const path = (p: string) => `decodedurl='${encodeURIComponent(p.replace(/'/g, "''"))}'`;
+  const list = await fetch(`${site}/_api/web/GetFolderByServerRelativePath(${path(folder)})/Files`, {
+    headers: { cookie, accept: "application/json;odata=nometadata" },
+  });
+  if (!list.ok) throw new Error(SHARE_ERROR(list.status));
+  const files = ((await list.json()).value as Array<{ Name: string; ServerRelativeUrl: string }>).filter((f) => /\.(xlsx|csv)$/i.test(f.Name));
+  return Promise.all(
+    files.map(async (f) => {
+      const res = await fetch(`${site}/_api/web/GetFileByServerRelativePath(${path(f.ServerRelativeUrl)})/$value`, { headers: { cookie } });
+      if (!res.ok) throw new Error(SHARE_ERROR(res.status));
+      return Buffer.from(await res.arrayBuffer());
+    })
+  );
+}
+
+async function download(link: string): Promise<Buffer[]> {
+  if (/sharepoint\.com\/:f:\//.test(link)) return sharePointFolder(link);
+  const res = await fetch(downloadUrl(link), { redirect: "follow" });
+  if (!res.ok) throw new Error(SHARE_ERROR(res.status));
+  return [Buffer.from(await res.arrayBuffer())];
+}
+
+/** Download each configured sheet (or every sheet in a shared folder) and return its claims. */
 export async function fetchSheetClaims(links: string[], since: string): Promise<{ claims: Claim[]; rows: number }> {
   const claims: Claim[] = [];
   let rows = 0;
-  for (const link of links) {
-    const res = await fetch(downloadUrl(link), { redirect: "follow" });
-    if (!res.ok) throw new Error(`Could not download the sheet (${res.status}). Share it as "anyone with the link can view".`);
-    const buf = Buffer.from(await res.arrayBuffer());
+  for (const buf of (await Promise.all(links.map(download))).flat()) {
     const tabs = buf.subarray(0, 2).toString() === "PK" ? readXlsx(buf) : [{ sheet: "Sheet", rows: readCsv(buf.toString("utf8")) }];
     rows += tabs.reduce((n, t) => n + t.rows.length, 0);
     claims.push(...sheetClaims(tabs, since));

@@ -1,6 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { judge, phoneKey, type AuditCall, type AuditLead, type Claim } from "@/lib/call-audit/engine";
 import { parseSheetDay, sheetClaims } from "@/lib/call-audit/sheet";
+import { lastBoundary } from "@/lib/call-audit/run";
+
+it("floors to the 12 AM / 4 AM / 12 PM / 4 PM IST boundaries", () => {
+  const b = (iso: string) => lastBoundary(new Date(iso)).toISOString();
+  expect(b("2026-10-07T06:45:00Z")).toBe("2026-10-07T06:30:00.000Z");
+  expect(b("2026-10-07T10:31:00Z")).toBe("2026-10-07T10:30:00.000Z");
+  expect(b("2026-10-07T23:00:00Z")).toBe("2026-10-07T22:30:00.000Z");
+  expect(b("2026-10-07T03:00:00Z")).toBe("2026-10-06T22:30:00.000Z");
+});
 
 const windowStart = new Date("2026-10-05T18:30:00Z");
 const windowEnd = new Date("2026-10-06T06:30:00Z");

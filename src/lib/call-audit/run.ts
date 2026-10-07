@@ -14,17 +14,17 @@ export type StoredReport = CallAuditReport & {
   sources: { metaLeads: number; calls: number; voicemails: number; privyr: number | null; sheetClaims: number | null };
 };
 
-/** Most recent 12:00 or 00:00 IST boundary (06:30 / 18:30 UTC) at or before `now`. */
+/** 12 AM, 4 AM, 12 PM, 4 PM IST as UTC hours (all at :30). Keep in sync with vercel.json. */
+const BOUNDARY_UTC_HOURS = [22, 18, 10, 6];
+
+/** Most recent audit boundary at or before `now`. */
 export function lastBoundary(now: Date): Date {
   const d = new Date(now);
   d.setUTCSeconds(0, 0);
   const minutes = d.getUTCHours() * 60 + d.getUTCMinutes();
-  if (minutes >= 18 * 60 + 30) d.setUTCHours(18, 30);
-  else if (minutes >= 6 * 60 + 30) d.setUTCHours(6, 30);
-  else {
-    d.setUTCDate(d.getUTCDate() - 1);
-    d.setUTCHours(18, 30);
-  }
+  const hour = BOUNDARY_UTC_HOURS.find((h) => minutes >= h * 60 + 30);
+  if (hour === undefined) d.setUTCDate(d.getUTCDate() - 1);
+  d.setUTCHours(hour ?? BOUNDARY_UTC_HOURS[0], 30);
   return d;
 }
 
@@ -44,7 +44,7 @@ export async function runCallAudit(
 ): Promise<{ runId: string; report: StoredReport }> {
   const company = await callAuditCompany();
   if (!company) throw new Error("Call audit brand not found. Set CALL_AUDIT_COMPANY_SLUG.");
-  const windowStart = new Date(+windowEnd - 12 * HOUR);
+  const windowStart = lastBoundary(new Date(+windowEnd - 60_000));
   const leadFrom = new Date(+windowStart - SLA_MINUTES * 60_000);
   const pullFrom = new Date(+windowEnd - 48 * HOUR);
   // Date-only sheet rows for yesterday are checked at the noon run, once the night shift is over.
