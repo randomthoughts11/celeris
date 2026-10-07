@@ -40,6 +40,13 @@ describe("call audit", () => {
     expect(r.claims[0].verdict).toBe("no_call");
   });
 
+  it("lists leads and claims as unchecked when the call log is missing", () => {
+    const r = judge({ windowStart, windowEnd, leads: [lead("9999999999")], claims: [claim("9999999999", 2)], calls: null, voicemails: [], sheetDay: null });
+    expect(r.totals.leads).toBe(1);
+    expect(r.leads[0].verdict).toBe("unchecked");
+    expect(r.claims[0].verdict).toBe("unchecked");
+  });
+
   it("reads sheet dates and call statuses", () => {
     const now = new Date("2026-09-29T12:00:00+05:30");
     expect(["28th Sept", "Sept 28", "9/28/2026", "28/9/2026", "45928"].map((s) => parseSheetDay(s, now))).toEqual([

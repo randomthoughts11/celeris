@@ -19,6 +19,7 @@ const LEAD_LABEL: Record<LeadVerdict, string> = {
   message_only: "Message only",
   untouched: "Untouched",
   waiting: "Still in 2h window",
+  unchecked: "Not checked yet",
 };
 const LEAD_CLASS: Record<LeadVerdict, string> = {
   verified: "bg-emerald-100 text-emerald-700",
@@ -27,13 +28,21 @@ const LEAD_CLASS: Record<LeadVerdict, string> = {
   message_only: "bg-orange-100 text-orange-700",
   untouched: "bg-red-100 text-red-700",
   waiting: "bg-slate-100 text-slate-600",
+  unchecked: "bg-slate-100 text-slate-600",
 };
-const CLAIM_LABEL: Record<ClaimVerdict, string> = { backed: "Backed", cut_short: `Under ${CUT_SECONDS}s`, no_call: "No call on log" };
+const CLAIM_LABEL: Record<ClaimVerdict, string> = {
+  backed: "Backed",
+  cut_short: `Under ${CUT_SECONDS}s`,
+  no_call: "No call on log",
+  unchecked: "Not checked yet",
+};
 const CLAIM_CLASS: Record<ClaimVerdict, string> = {
   backed: "bg-emerald-100 text-emerald-700",
   cut_short: "bg-orange-100 text-orange-700",
   no_call: "bg-red-100 text-red-700",
+  unchecked: "bg-slate-100 text-slate-600",
 };
+const VERDICTS = ["verified", "cut_short", "claimed_no_call", "message_only", "untouched", "waiting"] as const;
 const FLAG_LABEL: Record<string, string> = {
   late: "Late first call",
   not_logged: "Called but not logged",
@@ -64,7 +73,8 @@ export default async function CallAuditPage({ searchParams }: { searchParams: Pr
   const [row] = selectedId ? await sql`SELECT report FROM call_audit_runs WHERE id = ${selectedId}` : [];
   const report = row?.report as StoredReport | undefined;
 
-  const attention = report?.leads.filter((l) => l.verdict !== "verified" && l.verdict !== "waiting") ?? [];
+  const columns: readonly LeadVerdict[] = report?.totals.unchecked ? ["unchecked"] : VERDICTS;
+  const attention = report?.leads.filter((l) => !["verified", "waiting", "unchecked"].includes(l.verdict)) ?? [];
   const flagged = report?.leads.filter((l) => l.verdict === "verified" && l.flags.length) ?? [];
   const claims = [...(report?.claims ?? [])].sort((a, b) => (a.verdict === b.verdict ? 0 : a.verdict === "no_call" ? -1 : b.verdict === "no_call" ? 1 : 0));
 
@@ -121,18 +131,19 @@ export default async function CallAuditPage({ searchParams }: { searchParams: Pr
             </Card>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {(["verified", "cut_short", "claimed_no_call", "message_only", "untouched", "waiting"] as const).map((v) => (
+          <div className="grid gap-3 sm:grid-cols-4 lg:grid-cols-7">
+            <Card className="gap-1 border-primary/30 p-4">
+              <p className="text-xs text-muted-foreground">New leads</p>
+              <p className="text-2xl font-semibold">{report.totals.leads}</p>
+            </Card>
+            {columns.map((v) => (
               <Card key={v} className="gap-1 p-4">
                 <p className="text-xs text-muted-foreground">{LEAD_LABEL[v]}</p>
-                <p className="text-2xl font-semibold">{report.totals[v]}</p>
+                <p className="text-2xl font-semibold">{report.totals[v] ?? 0}</p>
               </Card>
             ))}
           </div>
           <Card className="flex-row flex-wrap items-center gap-x-8 gap-y-2 p-4 text-sm">
-            <span>
-              <span className="font-semibold">{report.totals.leads}</span> new leads
-            </span>
             <span>
               <span className="font-semibold">
                 {report.totals.claimsBacked} of {report.totals.claims}
@@ -140,7 +151,7 @@ export default async function CallAuditPage({ searchParams }: { searchParams: Pr
               logged calls are backed by a real RingCentral call
             </span>
             <span className="text-muted-foreground">
-              Sources: {report.sources.metaLeads} Meta leads pulled · {report.sources.calls} calls · {report.sources.voicemails} voicemails ·
+              Sources: {report.sources.metaLeads} Meta leads in the last 48h · {report.sources.calls} calls · {report.sources.voicemails} voicemails ·
               Privyr {report.sources.privyr ?? "not connected"} · sheet {report.sources.sheetClaims ?? "not set"}
             </span>
           </Card>
@@ -152,7 +163,7 @@ export default async function CallAuditPage({ searchParams }: { searchParams: Pr
                   <tr>
                     <th className="px-3 py-2.5 font-medium">Campaign</th>
                     <th className="px-3 py-2.5 text-right font-medium">Leads</th>
-                    {(["verified", "cut_short", "claimed_no_call", "message_only", "untouched", "waiting"] as const).map((v) => (
+                    {columns.map((v) => (
                       <th key={v} className="px-3 py-2.5 text-right font-medium">
                         {LEAD_LABEL[v]}
                       </th>
@@ -164,7 +175,7 @@ export default async function CallAuditPage({ searchParams }: { searchParams: Pr
                     <tr key={c.name}>
                       <td className="px-3 py-2.5 font-medium">{c.name}</td>
                       <td className="px-3 py-2.5 text-right">{c.leads}</td>
-                      {(["verified", "cut_short", "claimed_no_call", "message_only", "untouched", "waiting"] as const).map((v) => (
+                      {columns.map((v) => (
                         <td key={v} className={cn("px-3 py-2.5 text-right", c[v] && v !== "verified" && v !== "waiting" && "font-semibold text-red-700")}>
                           {c[v]}
                         </td>

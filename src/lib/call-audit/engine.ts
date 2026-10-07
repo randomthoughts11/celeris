@@ -43,8 +43,8 @@ export interface AuditVoicemail {
   transcript: string;
 }
 
-export type LeadVerdict = "verified" | "cut_short" | "claimed_no_call" | "message_only" | "untouched" | "waiting";
-export type ClaimVerdict = "backed" | "cut_short" | "no_call";
+export type LeadVerdict = "verified" | "cut_short" | "claimed_no_call" | "message_only" | "untouched" | "waiting" | "unchecked";
+export type ClaimVerdict = "backed" | "cut_short" | "no_call" | "unchecked";
 
 export interface LeadRow {
   name: string;
@@ -82,7 +82,8 @@ export interface AuditInput {
   windowEnd: Date;
   leads: AuditLead[];
   claims: Claim[];
-  calls: AuditCall[];
+  /** null when the call log could not be read: leads and claims are listed but not judged. */
+  calls: AuditCall[] | null;
   voicemails: AuditVoicemail[];
   /** Sheet claims dated this IST day are checked in this run. */
   sheetDay: string | null;
@@ -113,7 +114,9 @@ export function istDay(d: Date): string {
 export function judge(input: AuditInput): CallAuditReport {
   const { windowStart, windowEnd } = input;
   const outbound = new Map<string, AuditCall[]>();
-  for (const c of input.calls) {
+  const noLog = input.calls === null;
+  const allCalls = input.calls ?? [];
+  for (const c of allCalls) {
     if (c.direction !== "outbound" || !c.phoneKey) continue;
     outbound.set(c.phoneKey, [...(outbound.get(c.phoneKey) ?? []), c]);
   }
@@ -134,7 +137,10 @@ export function judge(input: AuditInput): CallAuditReport {
     const evidence: string[] = [];
     let verdict: LeadVerdict;
 
-    if (real.length) {
+    if (noLog) {
+      verdict = "unchecked";
+      evidence.push("Not checked yet: the RingCentral call log is not connected.");
+    } else if (real.length) {
       verdict = "verified";
       const late = (+real[0].start - +lead.createdAt) / 60_000;
       if (late > SLA_MINUTES) {
@@ -199,7 +205,7 @@ export function judge(input: AuditInput): CallAuditReport {
     seen.add(key);
     const calls = callsBetween(c.phoneKey, from, to);
     const real = calls.filter((x) => x.duration >= CUT_SECONDS);
-    const verdict: ClaimVerdict = real.length ? "backed" : calls.length ? "cut_short" : "no_call";
+    const verdict: ClaimVerdict = noLog ? "unchecked" : real.length ? "backed" : calls.length ? "cut_short" : "no_call";
     claims.push({
       name: c.name,
       phone: c.phoneKey,
@@ -208,12 +214,14 @@ export function judge(input: AuditInput): CallAuditReport {
       when,
       text: c.text,
       verdict,
-      evidence: calls.length ? calls.map(describe).join("; ") : `No call to this number between ${fmtIst(from)} and ${fmtIst(to)}.`,
+      evidence: noLog
+        ? "Not checked yet: the RingCentral call log is not connected."
+        : calls.length ? calls.map(describe).join("; ") : `No call to this number between ${fmtIst(from)} and ${fmtIst(to)}.`,
     });
   }
 
   const zero = (): Record<LeadVerdict | "leads", number> => ({
-    leads: 0, verified: 0, cut_short: 0, claimed_no_call: 0, message_only: 0, untouched: 0, waiting: 0,
+    leads: 0, verified: 0, cut_short: 0, claimed_no_call: 0, message_only: 0, untouched: 0, waiting: 0, unchecked: 0,
   });
   const byCampaign = new Map<string, Record<LeadVerdict | "leads", number>>();
   const totals = zero();
@@ -226,7 +234,7 @@ export function judge(input: AuditInput): CallAuditReport {
     totals[row.verdict]++;
   }
 
-  const windowCalls = input.calls.filter((c) => c.direction === "outbound" && c.start >= windowStart && c.start < windowEnd);
+  const windowCalls = allCalls.filter((c) => c.direction === "outbound" && c.start >= windowStart && c.start < windowEnd);
   return {
     windowStart: windowStart.toISOString(),
     windowEnd: windowEnd.toISOString(),

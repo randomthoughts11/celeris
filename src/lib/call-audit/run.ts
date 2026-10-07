@@ -38,7 +38,10 @@ export async function callAuditCompany(): Promise<{ id: string; name: string; ad
   return row ? { id: row.id as string, name: row.name as string, adAccountId: (row.ad_account_id as string) ?? null } : null;
 }
 
-export async function runCallAudit(windowEnd = lastBoundary(new Date())): Promise<{ runId: string; report: StoredReport }> {
+export async function runCallAudit(
+  windowEnd = lastBoundary(new Date()),
+  notify = true
+): Promise<{ runId: string; report: StoredReport }> {
   const company = await callAuditCompany();
   if (!company) throw new Error("Call audit brand not found. Set CALL_AUDIT_COMPANY_SLUG.");
   const windowStart = new Date(+windowEnd - 12 * HOUR);
@@ -101,9 +104,14 @@ export async function runCallAudit(windowEnd = lastBoundary(new Date())): Promis
 
   let report: StoredReport;
   const sources = { metaLeads: metaFetched, calls: 0, voicemails: 0, privyr: privyrCount, sheetClaims: sheetCount };
-  const empty = judge({ windowStart, windowEnd, leads: [], claims: [], calls: [], voicemails: [], sheetDay: null });
+  const unchecked = () => judge({ windowStart, windowEnd, leads, claims, calls: null, voicemails: [], sheetDay });
   if (!ringCentralConfigured()) {
-    report = { ...empty, warnings, sources, inconclusive: "RingCentral is not connected, so nobody was judged." };
+    report = {
+      ...unchecked(),
+      warnings,
+      sources,
+      inconclusive: "RingCentral is not connected yet. The leads below are real, but none of them can be checked against calls until it is.",
+    };
   } else {
     try {
       const rc = await fetchRingCentral(company.id, pullFrom, windowEnd);
@@ -115,7 +123,7 @@ export async function runCallAudit(windowEnd = lastBoundary(new Date())): Promis
           "RingCentral returned no calls at all for the last 48 hours. That usually means the key points at the wrong extension, so the verdicts below should not be trusted.";
       }
     } catch (e) {
-      report = { ...empty, warnings, sources, inconclusive: `RingCentral could not be read: ${e instanceof Error ? e.message : e}. Nobody was judged.` };
+      report = { ...unchecked(), warnings, sources, inconclusive: `RingCentral could not be read: ${e instanceof Error ? e.message : e}. Nobody was judged.` };
     }
   }
 
@@ -129,10 +137,10 @@ export async function runCallAudit(windowEnd = lastBoundary(new Date())): Promis
 
   const t = report.totals;
   const message = report.inconclusive
-    ? report.inconclusive
+    ? `${t.leads} new leads, not checked yet. ${report.inconclusive}`
     : `${t.leads} new leads: ${t.verified} called, ${t.cut_short} cut under 20s, ${t.claimed_no_call} claimed with no call, ${t.untouched} untouched. ${t.claimsBacked} of ${t.claims} logged calls backed by RingCentral.`;
   const viewers = callAuditViewers();
-  if (viewers.length) {
+  if (notify && viewers.length) {
     await sql`
       INSERT INTO notifications (user_id, company_id, type, title, message, link)
       SELECT id, ${company.id}, 'system', 'Call audit ready', ${message}, ${`/call-audit?run=${runId}`}
