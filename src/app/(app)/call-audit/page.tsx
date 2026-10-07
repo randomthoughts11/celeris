@@ -85,7 +85,7 @@ export default async function CallAuditPage({ searchParams }: { searchParams: Pr
           <p className="text-xs font-medium uppercase tracking-wider text-blue-600">Private · {company.name}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">Call audit</h1>
           <p className="text-muted-foreground">
-            Every lead from Meta, checked against what was logged and the RingCentral call log. Runs at 12:00 PM and 12:00 AM IST.
+            Every lead from Meta, checked against what was logged and the RingCentral call log. Runs at 12 AM, 4 AM, 12 PM and 4 PM IST.
           </p>
         </div>
         <RunNowButton />
@@ -188,7 +188,7 @@ export default async function CallAuditPage({ searchParams }: { searchParams: Pr
           )}
 
           <Section title={`Leads that were not properly called (${attention.length + flagged.length})`}>
-            <LeadTable leads={[...attention, ...flagged]} empty="Every lead past the 2-hour window got a real call." />
+            <LeadTable leads={[...attention, ...flagged]} empty={report.inconclusive ? "Nothing can be judged until RingCentral is connected." : "Every lead past the 2-hour window got a real call."} />
           </Section>
 
           <Section title={`Logged calls checked against RingCentral (${claims.length})`}>

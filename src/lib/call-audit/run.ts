@@ -2,8 +2,8 @@ import { getSql } from "@/lib/db/client";
 import { callAuditViewers } from "@/lib/call-audit/access";
 import { istDay, judge, SLA_MINUTES, type CallAuditReport, type Claim } from "@/lib/call-audit/engine";
 import { syncMetaLeads } from "@/lib/call-audit/meta-leads";
-import { privyrClaims } from "@/lib/call-audit/privyr";
-import { fetchRingCentral, ringCentralConfigured } from "@/lib/call-audit/ringcentral";
+import { privyrClaims, syncPrivyr } from "@/lib/call-audit/privyr";
+import { fetchRingCentral, relayRingCentral, ringCentralConfigured } from "@/lib/call-audit/ringcentral";
 import { fetchSheetClaims } from "@/lib/call-audit/sheet";
 
 const HOUR = 3_600_000;
@@ -81,6 +81,7 @@ export async function runCallAudit(
   const claims: Claim[] = [];
   let privyrCount: number | null = null;
   try {
+    await syncPrivyr(company.id, pullFrom);
     const p = await privyrClaims(company.id, pullFrom);
     if (p) {
       claims.push(...p);
@@ -105,7 +106,16 @@ export async function runCallAudit(
   let report: StoredReport;
   const sources = { metaLeads: metaFetched, calls: 0, voicemails: 0, privyr: privyrCount, sheetClaims: sheetCount };
   const unchecked = () => judge({ windowStart, windowEnd, leads, claims, calls: null, voicemails: [], sheetDay });
-  if (!ringCentralConfigured()) {
+  let rc: Awaited<ReturnType<typeof relayRingCentral>> = null;
+  let rcError: unknown = null;
+  try {
+    rc = ringCentralConfigured() ? await fetchRingCentral(company.id, pullFrom, windowEnd) : await relayRingCentral(company.id, pullFrom, windowEnd);
+  } catch (e) {
+    rcError = e;
+  }
+  if (rcError) {
+    report = { ...unchecked(), warnings, sources, inconclusive: `RingCentral could not be read: ${rcError instanceof Error ? rcError.message : rcError}. Nobody was judged.` };
+  } else if (!rc) {
     report = {
       ...unchecked(),
       warnings,
@@ -113,17 +123,12 @@ export async function runCallAudit(
       inconclusive: "RingCentral is not connected yet. The leads below are real, but none of them can be checked against calls until it is.",
     };
   } else {
-    try {
-      const rc = await fetchRingCentral(company.id, pullFrom, windowEnd);
-      sources.calls = rc.calls.length;
-      sources.voicemails = rc.voicemails.length;
-      report = { ...judge({ windowStart, windowEnd, leads, claims, calls: rc.calls, voicemails: rc.voicemails, sheetDay }), warnings, sources };
-      if (!rc.calls.length && (leads.length || claims.length)) {
-        report.inconclusive =
-          "RingCentral returned no calls at all for the last 48 hours. That usually means the key points at the wrong extension, so the verdicts below should not be trusted.";
-      }
-    } catch (e) {
-      report = { ...unchecked(), warnings, sources, inconclusive: `RingCentral could not be read: ${e instanceof Error ? e.message : e}. Nobody was judged.` };
+    sources.calls = rc.calls.length;
+    sources.voicemails = rc.voicemails.length;
+    report = { ...judge({ windowStart, windowEnd, leads, claims, calls: rc.calls, voicemails: rc.voicemails, sheetDay }), warnings, sources };
+    if (!rc.calls.length && (leads.length || claims.length)) {
+      report.inconclusive =
+        "RingCentral returned no calls at all for the last 48 hours. That usually means the key points at the wrong extension, so the verdicts below should not be trusted.";
     }
   }
 

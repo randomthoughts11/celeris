@@ -37,7 +37,7 @@ async function pages<T>(access: string, path: string, params: Record<string, str
 }
 
 interface RcParty { phoneNumber?: string; name?: string }
-interface RcCall {
+export interface RcCall {
   id: string;
   startTime: string;
   duration?: number;
@@ -89,23 +89,8 @@ export async function fetchRingCentral(companyId: string, from: Date, to: Date) 
     records = await pages<RcCall>(access, "/restapi/v1.0/account/~/extension/~/call-log", { ...window, type: "Voice", view: "Simple", perPage: "1000" });
   }
 
-  const calls: AuditCall[] = [];
+  const calls = await storeCalls(companyId, records, "ringcentral_api");
   const sql = getSql();
-  for (const r of records) {
-    const direction = /^out/i.test(r.direction ?? "") ? "outbound" : "inbound";
-    const other = direction === "outbound" ? r.to?.phoneNumber : r.from?.phoneNumber;
-    const call: AuditCall = { phoneKey: phoneKey(other), direction, start: new Date(r.startTime), duration: r.duration ?? 0, result: r.result ?? "" };
-    calls.push(call);
-    await sql`
-      INSERT INTO ringcentral_calls (company_id, external_id, direction, outcome, caller, receiver, duration_seconds, started_at, metadata)
-      VALUES (${companyId}, ${r.id}, ${direction}, ${outcome(r.result)}, ${r.from?.phoneNumber ?? null}, ${r.to?.phoneNumber ?? null},
-        ${call.duration}, ${r.startTime},
-        ${JSON.stringify({ source: "ringcentral_api", result: r.result, extension: r.extension?.id ?? null, phone_key: call.phoneKey })})
-      ON CONFLICT (company_id, external_id) DO UPDATE SET
-        outcome = EXCLUDED.outcome, duration_seconds = EXCLUDED.duration_seconds, metadata = ringcentral_calls.metadata || EXCLUDED.metadata
-    `;
-  }
-
   const voicemails: AuditVoicemail[] = [];
   const extensions = (process.env.RINGCENTRAL_EXTENSION_IDS || "~").split(",").map((s) => s.trim()).filter(Boolean);
   for (const ext of extensions) {
@@ -128,14 +113,82 @@ export async function fetchRingCentral(companyId: string, from: Date, to: Date) 
           if (res.ok) transcript = await transcribe(await res.blob());
         }
       }
-      const vm: AuditVoicemail = { phoneKey: phoneKey(m.from?.phoneNumber), at: new Date(m.creationTime), duration: audio?.vmDuration ?? 0, transcript };
-      voicemails.push(vm);
-      await sql`
-        INSERT INTO ringcentral_calls (company_id, external_id, direction, outcome, caller, duration_seconds, notes, started_at, metadata)
-        VALUES (${companyId}, ${externalId}, 'inbound', 'voicemail', ${m.from?.phoneNumber ?? null}, ${vm.duration}, ${transcript || null},
-          ${m.creationTime}, ${JSON.stringify({ source: "ringcentral_api", kind: "voicemail", phone_key: vm.phoneKey })})
-        ON CONFLICT (company_id, external_id) DO UPDATE SET notes = COALESCE(EXCLUDED.notes, ringcentral_calls.notes)
-      `;
+      voicemails.push(
+        await storeVoicemail(companyId, { id: m.id, creationTime: m.creationTime, from: m.from?.phoneNumber, duration: audio?.vmDuration ?? 0, transcript }, "ringcentral_api")
+      );
+    }
+  }
+  return { calls, voicemails };
+}
+
+export async function storeCalls(companyId: string, records: RcCall[], source: string): Promise<AuditCall[]> {
+  const sql = getSql();
+  const calls: AuditCall[] = [];
+  for (const r of records) {
+    const direction = /^out/i.test(r.direction ?? "") ? "outbound" : "inbound";
+    const other = direction === "outbound" ? r.to?.phoneNumber : r.from?.phoneNumber;
+    const call: AuditCall = { phoneKey: phoneKey(other), direction, start: new Date(r.startTime), duration: r.duration ?? 0, result: r.result ?? "" };
+    calls.push(call);
+    await sql`
+      INSERT INTO ringcentral_calls (company_id, external_id, direction, outcome, caller, receiver, duration_seconds, started_at, metadata)
+      VALUES (${companyId}, ${r.id}, ${direction}, ${outcome(r.result)}, ${r.from?.phoneNumber ?? null}, ${r.to?.phoneNumber ?? null},
+        ${call.duration}, ${r.startTime},
+        ${JSON.stringify({ source, result: r.result, extension: r.extension?.id ?? null, phone_key: call.phoneKey })})
+      ON CONFLICT (company_id, external_id) DO UPDATE SET
+        outcome = EXCLUDED.outcome, duration_seconds = EXCLUDED.duration_seconds, metadata = ringcentral_calls.metadata || EXCLUDED.metadata
+    `;
+  }
+  return calls;
+}
+
+export type RelayVoicemail = { id: string | number; creationTime: string; from?: string; duration: number; transcript: string };
+
+export async function storeVoicemail(companyId: string, m: RelayVoicemail, source: string): Promise<AuditVoicemail> {
+  const vm: AuditVoicemail = { phoneKey: phoneKey(m.from), at: new Date(m.creationTime), duration: m.duration, transcript: m.transcript };
+  await getSql()`
+    INSERT INTO ringcentral_calls (company_id, external_id, direction, outcome, caller, duration_seconds, notes, started_at, metadata)
+    VALUES (${companyId}, ${`vm-${m.id}`}, 'inbound', 'voicemail', ${m.from ?? null}, ${m.duration}, ${m.transcript || null},
+      ${m.creationTime}, ${JSON.stringify({ source, kind: "voicemail", phone_key: vm.phoneKey })})
+    ON CONFLICT (company_id, external_id) DO UPDATE SET notes = COALESCE(EXCLUDED.notes, ringcentral_calls.notes)
+  `;
+  return vm;
+}
+
+const RELAY_KEY = "ringcentral_relay_at";
+
+/** Called by the office-PC helper (scripts/rc-relay.mjs) each time it pushes the call log. */
+export async function recordRelayPush(): Promise<void> {
+  await getSql()`
+    INSERT INTO app_meta (key, value) VALUES (${RELAY_KEY}, ${new Date().toISOString()})
+    ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
+  `;
+}
+
+/**
+ * Calls the helper has pushed for [from, to). Null when the helper has never run.
+ * Throws when it has gone quiet, since a gap would make real calls look missing.
+ */
+export async function relayRingCentral(companyId: string, from: Date, to: Date) {
+  const sql = getSql();
+  const [meta] = await sql`SELECT value FROM app_meta WHERE key = ${RELAY_KEY}`.catch(() => []);
+  if (!meta) return null;
+  const last = new Date(meta.value as string);
+  // ponytail: the helper pushes every 15 min, so up to ~30 min of the newest calls may be missing on an on-time cron.
+  if (+last < +to - 30 * 60_000) {
+    throw new Error(`the RingCentral helper on the office PC last sent calls at ${last.toISOString()}. Check that the PC and Chrome are on`);
+  }
+  const rows = await sql`
+    SELECT direction, outcome, duration_seconds, started_at, notes, metadata FROM ringcentral_calls
+    WHERE company_id = ${companyId} AND started_at >= ${from.toISOString()} AND started_at < ${to.toISOString()}
+  `;
+  const calls: AuditCall[] = [];
+  const voicemails: AuditVoicemail[] = [];
+  for (const r of rows) {
+    const meta = (r.metadata ?? {}) as { phone_key?: string; result?: string; kind?: string };
+    if (meta.kind === "voicemail") {
+      voicemails.push({ phoneKey: meta.phone_key ?? "", at: new Date(r.started_at as string), duration: Number(r.duration_seconds ?? 0), transcript: (r.notes as string) ?? "" });
+    } else {
+      calls.push({ phoneKey: meta.phone_key ?? "", direction: r.direction as AuditCall["direction"], start: new Date(r.started_at as string), duration: Number(r.duration_seconds ?? 0), result: meta.result ?? "" });
     }
   }
   return { calls, voicemails };
