@@ -158,15 +158,16 @@ export function judge(input: AuditInput): CallAuditReport {
     } else if (calls.length) {
       verdict = "cut_short";
       evidence.push(`Every call was under ${CUT_SECONDS}s, so it was cut before it could ring through to voicemail.`);
+    } else if (+windowEnd - +lead.createdAt < SLA_MINUTES * 60_000) {
+      // The call behind a fresh claim can land just after windowEnd; judge it in the next report.
+      verdict = "waiting";
+      evidence.push(`Still inside the ${SLA_MINUTES / 60}h response window. It is judged again in the next report.`);
     } else if (callClaims.length) {
       verdict = "claimed_no_call";
       evidence.push("She logged a call, but RingCentral has no call to this number.");
     } else if (claims.length) {
       verdict = "message_only";
       evidence.push("Only a message or WhatsApp was logged. No call was made.");
-    } else if (+windowEnd - +lead.createdAt < SLA_MINUTES * 60_000) {
-      verdict = "waiting";
-      evidence.push(`Still inside the ${SLA_MINUTES / 60}h response window. It is judged again in the next report.`);
     } else {
       verdict = "untouched";
       evidence.push("No call, no message, nothing logged.");

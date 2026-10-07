@@ -84,8 +84,10 @@ export async function runCallAudit(
     await syncPrivyr(company.id, pullFrom);
     const p = await privyrClaims(company.id, pullFrom);
     if (p) {
-      claims.push(...p);
-      privyrCount = p.length;
+      // The call log stops at windowEnd, so a later claim would look like it has no call behind it.
+      const inWindow = p.filter((c) => !c.at || c.at < windowEnd);
+      claims.push(...inWindow);
+      privyrCount = inWindow.length;
     } else warnings.push("Privyr is not connected yet, so Privyr activities are not in this report.");
   } catch (e) {
     warnings.push(`Privyr: ${e instanceof Error ? e.message : e}`);
@@ -96,8 +98,9 @@ export async function runCallAudit(
   if (links.length) {
     try {
       const s = await fetchSheetClaims(links, istDay(pullFrom));
-      claims.push(...s.claims);
-      sheetCount = s.claims.length;
+      const inWindow = s.claims.filter((c) => !c.day || c.day <= istDay(windowEnd));
+      claims.push(...inWindow);
+      sheetCount = inWindow.length;
     } catch (e) {
       warnings.push(`Sheet: ${e instanceof Error ? e.message : e}`);
     }
