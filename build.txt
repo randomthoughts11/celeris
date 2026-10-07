@@ -9,11 +9,12 @@ Celeris CRM — Build Log
   (her "CALL LIST DETAILS" folder). Call column = date called, Remarks = outcome.
 - Privyr: synced each run from the web app's activity timeline using the logged-in session cookie
   (PRIVYR_SESSION = pss_system_id; expires ~17 Nov 2026, refresh it if the report says the login expired).
-- RingCentral: developer/API access is turned off for the account, so scripts/rc-relay.mjs runs on the office PC
-  (Task Scheduler "Celeris RingCentral relay", at logon). It keeps an admin-portal tab alive in the user's Chrome,
-  signs in again with Chrome's saved password if logged out, and posts the account call log + voicemails to
-  /api/webhooks/ringcentral-relay every 10 min. If it goes quiet for 30+ min the report says so and judges nobody.
-  Needs Chrome's chrome://inspect/#remote-debugging "Allow remote debugging" switch on.
+- RingCentral: developer/API access is turned off for the account, so a Chrome extension (tools/rc-relay-extension,
+  loaded unpacked in the Ganesh profile) reads the admin portal's API with the browser's RingCentral login and posts
+  the account call log + voicemails to /api/webhooks/ringcentral-relay every 10 min. The pings also keep the
+  RingCentral session (30 min idle timeout) alive; if logged out it opens the portal and clicks through sign-in with
+  Chrome's saved password. No remote debugging needed. config.js (CRM URL + CRON_SECRET) is local and gitignored.
+  If nothing arrives for 30+ min the report says so and judges nobody. Chrome must be open on the office PC.
 - Brand clients: an approved account with no agency role (call-audit viewers are auto-approved at signup and added to
   the brand) sees only its brands' Meta Ads / Google Ads pages and the call audit; middleware blocks everything else.
   Switch account / Sync / Apply stay hidden. God mode can preview this view with the call-audit-preview cookie.

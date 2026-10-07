@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Celeris RingCentral relay",
+  "version": "1.0",
+  "description": "Sends the RingCentral call log to Celeris CRM every 10 minutes using this browser's RingCentral login.",
+  "permissions": ["alarms", "tabs"],
+  "host_permissions": [
+    "https://service.ringcentral.com/*",
+    "https://login.ringcentral.com/*",
+    "https://celeris-bice.vercel.app/*"
+  ],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    { "matches": ["https://login.ringcentral.com/*"], "js": ["login.js"], "run_at": "document_idle" }
+  ]
+}
