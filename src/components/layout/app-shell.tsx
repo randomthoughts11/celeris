@@ -52,6 +52,7 @@ import {
 import { NotificationsBell } from "@/components/layout/notifications-bell";
 import { ClockWidget } from "@/components/workforce/clock-widget";
 import { resolveCompanyNameAction } from "@/features/companies/actions";
+import { CLIENT_BRAND_PAGES } from "@/lib/call-audit/access";
 
 const companyNav = [
   { key: "overview" as const, href: "", label: "Overview", icon: LayoutDashboard, group: "work" as const },
@@ -85,8 +86,8 @@ const companyGroups = [
 interface AppShellProps {
   user: SessionUser;
   showCallAudit?: boolean;
-  /** Call-audit viewers outside the agency see only the audit. */
-  auditOnly?: boolean;
+  /** Set for brand clients: they see only these brands' ad pages (plus the call audit if allowed). */
+  clientBrands?: Array<{ slug: string; name: string }>;
   children: React.ReactNode;
 }
 
@@ -135,13 +136,15 @@ function SideSection({ label, children }: { label: string; children: React.React
   );
 }
 
-export function AppShell({ user, showCallAudit, auditOnly, children }: AppShellProps) {
+export function AppShell({ user, showCallAudit, clientBrands, children }: AppShellProps) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const telecallerMode = isDeskFocused(user.roles);
-  const homeHref = auditOnly ? "/call-audit" : telecallerMode ? "/telecaller" : "/";
-  const homeLabel = auditOnly ? "Call audit" : telecallerMode ? "Desk" : "Brands";
-  const isHome = pathname === "/" || pathname === "/telecaller";
+  const client = Boolean(clientBrands);
+  const clientHome = showCallAudit || !clientBrands?.[0] ? "/call-audit" : `/companies/${clientBrands[0].slug}/meta-ads`;
+  const homeHref = client ? clientHome : telecallerMode ? "/telecaller" : "/";
+  const homeLabel = client ? (showCallAudit ? "Call audit" : "Ads") : telecallerMode ? "Desk" : "Brands";
+  const isHome = pathname === homeHref || pathname === "/" || pathname === "/telecaller";
   const companySlug = pathname.match(/^\/companies\/([^/]+)/)?.[1];
   const [resolvedName, setResolvedName] = useState<{ slug: string; name: string }>();
   const companyName = companySlug
@@ -169,15 +172,22 @@ export function AppShell({ user, showCallAudit, auditOnly, children }: AppShellP
   }, [companySlug]);
 
   const visibleCompanyNav = companyNav.filter((item) =>
-    canSeeCompanyNavItem(user.roles, item.key)
+    client
+      ? (CLIENT_BRAND_PAGES as readonly string[]).includes(item.key)
+      : canSeeCompanyNavItem(user.roles, item.key)
   );
 
-  const globalNav = [
+  const globalNav = client
+    ? [
+        ...(showCallAudit ? [{ key: "call-audit" as const, href: "/call-audit", label: "Call audit", icon: PhoneCall }] : []),
+        ...clientBrands!.map((b) => ({ key: "home" as const, href: `/companies/${b.slug}/meta-ads`, label: b.name, icon: Building2 })),
+      ]
+    : [
     {
       key: "home" as const,
       href: homeHref,
       label: homeLabel,
-      icon: auditOnly ? PhoneCall : Building2,
+      icon: Building2,
     },
     { key: "tasks" as const, href: "/tasks", label: "Tasks", icon: ListChecks },
     { key: "call-audit" as const, href: "/call-audit", label: "Call audit", icon: PhoneCall },
@@ -198,8 +208,7 @@ export function AppShell({ user, showCallAudit, auditOnly, children }: AppShellP
   ].filter(
     (item) =>
       item.key === "home" ||
-      (!auditOnly &&
-        (item.key === "call-audit" ? showCallAudit : canSeeGlobalNav(user.roles, item.key as GlobalNavItem)))
+      (item.key === "call-audit" ? showCallAudit : canSeeGlobalNav(user.roles, item.key as GlobalNavItem))
   );
 
   const currentLabel =
@@ -338,7 +347,7 @@ export function AppShell({ user, showCallAudit, auditOnly, children }: AppShellP
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <ClockWidget />
+            {!client && <ClockWidget />}
             <NotificationsBell userId={user.id} />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium leading-none">{user.fullName}</p>

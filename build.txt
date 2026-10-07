@@ -1,6 +1,24 @@
 Celeris CRM — Build Log
 =======================
 
+2026-10-07 — Call audit goes live, client access
+-----------------------------------------------
+- Runs 4x a day: 12 AM, 4 AM, 12 PM, 4 PM IST; each report covers the time since the previous run.
+- Leads are listed as "Not checked yet" when RingCentral can't be read (previously they were hidden).
+- Sheets: CALL_AUDIT_SHEET_URLS now accepts a SharePoint folder share link and reads every .xlsx inside
+  (her "CALL LIST DETAILS" folder). Call column = date called, Remarks = outcome.
+- Privyr: synced each run from the web app's activity timeline using the logged-in session cookie
+  (PRIVYR_SESSION = pss_system_id; expires ~17 Nov 2026, refresh it if the report says the login expired).
+- RingCentral: developer/API access is turned off for the account, so scripts/rc-relay.mjs runs on the office PC
+  (Task Scheduler "Celeris RingCentral relay", at logon). It keeps an admin-portal tab alive in the user's Chrome,
+  signs in again with Chrome's saved password if logged out, and posts the account call log + voicemails to
+  /api/webhooks/ringcentral-relay every 10 min. If it goes quiet for 30+ min the report says so and judges nobody.
+  Needs Chrome's chrome://inspect/#remote-debugging "Allow remote debugging" switch on.
+- Brand clients: an approved account with no agency role (call-audit viewers are auto-approved at signup and added to
+  the brand) sees only its brands' Meta Ads / Google Ads pages and the call audit; middleware blocks everything else.
+  Switch account / Sync / Apply stay hidden. God mode can preview this view with the call-audit-preview cookie.
+- Viewers: work.ganeshdatta@gmail.com, mp@vandewellness.com (invite not sent yet).
+
 2026-10-05 — Telecaller call audit
 ---------------------------------
 - New private page /call-audit (only emails in CALL_AUDIT_VIEWERS see it or the nav link; everyone else gets 404).

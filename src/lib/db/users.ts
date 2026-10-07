@@ -113,6 +113,12 @@ export async function ensureProfileForClerkUser(input: {
       VALUES (${input.email.toLowerCase()}, ${input.fullName}, ${input.avatarUrl}, ${input.clerkUserId}, 'approved')
       ON CONFLICT (email) DO UPDATE SET clerk_user_id = EXCLUDED.clerk_user_id, approval_status = 'approved', updated_at = now()
     `;
+    await sql`
+      INSERT INTO company_members (company_id, user_id)
+      SELECT c.id, p.id FROM companies c, profiles p
+      WHERE c.slug = ${process.env.CALL_AUDIT_COMPANY_SLUG || "vande-wellness-us"} AND p.clerk_user_id = ${input.clerkUserId}
+        AND NOT EXISTS (SELECT 1 FROM company_members m WHERE m.company_id = c.id AND m.user_id = p.id)
+    `;
     const viewer = await getUserByClerkId(input.clerkUserId);
     if (viewer) return viewer;
   }

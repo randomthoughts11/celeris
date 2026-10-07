@@ -8,6 +8,7 @@ import {
   type GlobalNavItem,
 } from "@/lib/rbac/nav";
 import { canManageBrandSetup } from "@/lib/auth/access";
+import { CLIENT_BRAND_PAGES, isClient } from "@/lib/call-audit/access";
 import type { SessionUser } from "@/types";
 
 export async function requireSession(): Promise<SessionUser> {
@@ -21,6 +22,8 @@ export async function requireCompanyPageAccess(
   item: CompanyNavItem
 ): Promise<SessionUser> {
   const user = await requireSession();
+  // Middleware limits clients to their own brands, so only the page type is checked here.
+  if (isClient(user) && (CLIENT_BRAND_PAGES as readonly string[]).includes(item)) return user;
   if (!canSeeCompanyNavItem(user.roles, item)) {
     redirect(getHomePathForRole(user.roles));
   }

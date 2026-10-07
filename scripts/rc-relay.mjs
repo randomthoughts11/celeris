@@ -43,12 +43,38 @@ async function portalPage(ctx) {
   const p = await ctx.newPage();
   await p.goto("https://service.ringcentral.com/", { waitUntil: "domcontentloaded", timeout: 60_000 }).catch(() => {});
   await sleep(8000);
-  const resume = p.getByText("Continue as", { exact: false }).first();
-  if (await resume.isVisible().catch(() => false)) {
-    await resume.click();
-    await sleep(10_000);
-  }
   return p;
+}
+
+/** Click through RingCentral's sign-in using the credentials Chrome has saved. */
+async function signIn(p) {
+  if (!p.url().includes("login.ringcentral.com")) {
+    await p.goto("https://service.ringcentral.com/", { waitUntil: "domcontentloaded", timeout: 60_000 }).catch(() => {});
+    await sleep(8000);
+  }
+  const click = async (loc) => {
+    if (await loc.isVisible().catch(() => false)) {
+      await loc.click({ timeout: 10_000 }).catch(() => {});
+      await sleep(3000);
+      return true;
+    }
+    return false;
+  };
+  await click(p.getByText("Continue as", { exact: false }).first());
+  for (let step = 0; step < 3 && p.url().includes("login.ringcentral.com"); step++) {
+    const field = p.locator("input[type=password]:visible, input[type=email]:visible, input[type=text]:visible").first();
+    if (await click(field)) {
+      if (!(await field.inputValue().catch(() => ""))) {
+        await p.keyboard.press("ArrowDown");
+        await sleep(800);
+        await p.keyboard.press("Enter");
+        await sleep(1500);
+      }
+    }
+    if (!(await click(p.getByRole("button", { name: /^(next|sign in|log in)$/i }).first()))) await p.keyboard.press("Enter");
+    await sleep(8000);
+  }
+  log("sign-in attempt finished at", p.url().split("?")[0]);
 }
 
 /** Runs inside the portal tab, using its login cookie. */
@@ -92,9 +118,14 @@ for (;;) {
   try {
     if (!browser.isConnected()) browser = await connect();
     const page = await portalPage(browser.contexts()[0]);
-    const alive = await page.evaluate(async () => (await fetch("/api/proxy/restapi/oauth/session-info", { credentials: "include" })).status).catch(() => 0);
+    const status = () => page.evaluate(async () => (await fetch("/api/proxy/restapi/oauth/session-info", { credentials: "include" })).status).catch(() => 0);
+    let alive = await status();
     if (alive !== 200) {
-      log("RingCentral is logged out. Sign in at https://service.ringcentral.com in Chrome.");
+      await signIn(page);
+      alive = await status();
+    }
+    if (alive !== 200) {
+      log("RingCentral is still logged out after the automatic sign-in.");
     } else {
       await page.mouse.move(200 + Math.random() * 400, 200 + Math.random() * 300).catch(() => {});
       const since = new Date(Date.now() - (first ? 48 : 3) * 3_600_000).toISOString();

@@ -5,7 +5,7 @@ import {
   isDatabaseConfigured,
   isDemoMode,
 } from "@/lib/config";
-import { isAuditOnly } from "@/lib/call-audit/access";
+import { canViewCallAudit, clientMayOpen, isClient } from "@/lib/call-audit/access";
 
 const isPublicRoute = createRouteMatcher([
   "/login(.*)",
@@ -57,22 +57,24 @@ export default clerkMiddleware(async (auth, request) => {
     const { neon } = await import("@neondatabase/serverless");
     const sql = neon(process.env.DATABASE_URL!);
     const rows = await sql`
-      SELECT p.approval_status, p.email, COALESCE(array_agg(r.role::text) FILTER (WHERE r.role IS NOT NULL), '{}'::text[]) AS roles
-      FROM profiles p LEFT JOIN user_roles r ON r.user_id = p.id
+      SELECT p.approval_status, p.email,
+        COALESCE(array_agg(DISTINCT r.role::text) FILTER (WHERE r.role IS NOT NULL), '{}'::text[]) AS roles,
+        COALESCE(array_agg(DISTINCT c.slug) FILTER (WHERE c.slug IS NOT NULL), '{}'::text[]) AS brands
+      FROM profiles p
+      LEFT JOIN user_roles r ON r.user_id = p.id
+      LEFT JOIN company_members cm ON cm.user_id = p.id
+      LEFT JOIN companies c ON c.id = cm.company_id
       WHERE p.clerk_user_id = ${userId} AND p.is_active = true
       GROUP BY p.id
       LIMIT 1
     `;
     const status = rows[0]?.approval_status as string | undefined;
     const path = request.nextUrl.pathname;
+    const brands = (rows[0]?.brands ?? []) as string[];
 
-    if (
-      rows[0] &&
-      isAuditOnly({ email: rows[0].email as string, roles: rows[0].roles as string[] }) &&
-      !path.startsWith("/call-audit") &&
-      !path.startsWith("/api/")
-    ) {
-      return NextResponse.redirect(new URL("/call-audit", request.url));
+    if (status === "approved" && isClient({ roles: rows[0].roles as string[] }) && !clientMayOpen(path, brands)) {
+      const home = canViewCallAudit({ email: rows[0].email as string }) || !brands[0] ? "/call-audit" : `/companies/${brands[0]}/meta-ads`;
+      return NextResponse.redirect(new URL(home, request.url));
     }
 
     if (status === "pending" && !request.nextUrl.pathname.startsWith("/pending-approval")) {

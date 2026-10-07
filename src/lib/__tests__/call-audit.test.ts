@@ -2,6 +2,16 @@ import { describe, it, expect } from "vitest";
 import { judge, phoneKey, type AuditCall, type AuditLead, type Claim } from "@/lib/call-audit/engine";
 import { parseSheetDay, sheetClaims } from "@/lib/call-audit/sheet";
 import { lastBoundary } from "@/lib/call-audit/run";
+import { clientMayOpen } from "@/lib/call-audit/access";
+
+it("keeps brand clients on their own ad pages and the call audit", () => {
+  const brands = ["vande-wellness-us"];
+  expect(clientMayOpen("/call-audit", brands)).toBe(true);
+  expect(clientMayOpen("/companies/vande-wellness-us/meta-ads", brands)).toBe(true);
+  expect(clientMayOpen("/companies/vande-wellness-us/leads", brands)).toBe(false);
+  expect(clientMayOpen("/companies/other-brand/meta-ads", brands)).toBe(false);
+  expect(clientMayOpen("/vault", brands)).toBe(false);
+});
 
 it("floors to the 12 AM / 4 AM / 12 PM / 4 PM IST boundaries", () => {
   const b = (iso: string) => lastBoundary(new Date(iso)).toISOString();
